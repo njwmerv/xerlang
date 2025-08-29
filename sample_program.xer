@@ -1,0 +1,38 @@
+hex : () -> int {
+    return 0x8000000;
+    return    0x7FFFFFFF;
+}
+
+neg : () -> int {
+    return -2147483648;
+}
+
+sub : () -> int {
+    return 0b01111111111111111111111111111111;
+}
+
+add : () -> int {
+    return 21474836470;
+}
+// comment here
+// also comment here
+
+is_negative: int a -> bool { // BLEEHHHH
+    if (a == 0) {
+        return FALSE;
+    }
+    else if (a < 0) {
+        return TRUE;
+    }
+    else {
+        return FALSE;
+    }
+
+    while (a) {
+
+    }
+}
+
+main                : (
+) ->
+int { return 0b1; }

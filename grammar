@@ -1,0 +1,136 @@
+procedures  -> main .
+procedures  -> procedure procedures .
+procedures  -> decl procedures .
+procedures  -> struct ID { fields } ; .
+procedures  -> ID : ( params ) -> type ; .
+
+decl        -> type ID ; .
+decl        -> type ID = expr0 ; .
+decl        -> auto ID = expr0 ; .
+decl        -> const type ID ; .
+decl        -> const type ID = expr0 ; .
+decl        -> const auto ID = expr0 ; .
+
+fields      -> .
+fields      -> decl ; fields .
+
+main        -> MAIN : ( ) -> INT { statements } .
+main        -> MAIN : ( INT ID , CHAR * * ID ) -> INT { statements } .
+
+procedure   -> ID : ( params ) -> type { statements } .
+procedure   -> ID : decl -> type { statements } .
+
+params      -> decl .
+params      -> decl , params .
+
+type        -> INT ptr .
+type        -> CHAR ptr .
+type        -> BOOL ptr .
+type        -> ID ptr .
+
+ptr         -> .
+ptr         -> * ptr .
+
+statements  -> .
+statements  -> RETURN expr0 ; .
+statements  -> decl statements .
+statements  -> IF ( cond0 ) { statements } elseif statements .
+statements  -> FOR ( decl ) ( cond0 ) ( incr ) { statements } statements .
+statements  -> FOR ( lvalue = expr0 ) ( cond0 ) ( incr ) { statements } statements .
+statements  -> WHILE ( cond0 ) { statements } statements .
+statements  -> DO { statements } WHILE ( cond0 ) ; statements .
+statements  -> incr statements .
+statements  -> expr0 ; statements .
+statements  -> break ; statements .
+statements  -> DELETE expr0 ; statements .
+statements  -> ID : statements .
+statements  -> goto ID ; statements .
+
+elseif      -> .
+elseif      -> ELSIF ( cond0 ) { statements } elseif .
+elseif      -> ELSE { statements } .
+
+cond0       -> cond0 || expr0 .
+cond0       -> cond1 .
+cond1       -> cond1 && expr0 .
+cond1       -> ( cond0 ) .
+cond1       -> expr0 .
+
+incr        -> .
+incr        -> lvalue op = expr0 ; incr .
+incr        -> lvalue ++ ; incr .
+incr        -> lvalue -- ; incr .
+
+op          -> .
+op          -> + .
+op          -> - .
+op          -> * .
+op          -> / .
+op          -> % .
+op          -> ** .
+op          -> << .
+op          -> >> .
+op          -> ^ .
+op          -> | .
+op          -> & .
+
+expr0       -> ( type ) expr1 .
+expr0       -> expr1 >= expr1 .
+expr0       -> expr1 > expr1 .
+expr0       -> expr1 <= expr .1 .
+expr0       -> expr1 < expr1 .
+expr0       -> expr1 == expr .1 .
+expr0       -> expr1 != expr1 .
+expr0       -> expr1 .
+expr1       -> ( cond0 ) ? expr1 : expr1 .
+expr1       -> expr1 + expr2 .
+expr1       -> expr1 - expr2 .
+expr1       -> expr2 .
+expr2       -> expr2 * expr3 .
+expr2       -> expr2 / expr3 .
+expr2       -> expr2 % expr3 .
+expr2       -> expr3 .
+expr3       -> expr4 ** expr3 .
+expr3       -> expr4 .
+expr4       -> expr4 << expr5 .
+expr4       -> expr4 >> expr5 .
+expr4       -> expr4 << expr5 .
+expr4       -> expr4 ^ expr5 .
+expr4       -> expr4 | expr5 .
+expr4       -> expr4 & expr5 .
+expr4       -> expr5 .
+expr5       -> SIZEOF ( expr0 ) .
+expr5       -> ID ( ) .
+expr5       -> ID ( args ) .
+expr5       -> ( expr0 ) .
+expr5       -> expr6 .
+expr6       -> ! expr6 .
+expr6       -> - expr6 .
+expr6       -> ~ expr6 .
+expr6       -> ++ expr6 .
+expr6       -> -- expr6 .
+expr6       -> expr6 ++ .
+expr6       -> expr6 -- .
+expr6       -> & lvalue .
+expr6       -> * expr6 .
+expr6       -> expr6 -> expr6 .
+expr6       -> expr6 . expr6 .
+expr6       -> ID .
+expr6       -> DEC .
+expr6       -> HEX .
+expr6       -> BIN .
+expr6       -> TRUE .
+expr6       -> FALSE .
+expr6       -> NULL .
+expr6       -> STRLIT .
+expr6       -> CHARLIT .
+expr6       -> NEW type [ expr0 ] .
+expr6       -> NEW type .
+
+args        -> expr0 , args .
+args        -> expr0 .
+
+lvalue      -> ID .
+lvalue      -> * expr6 .
+lvalue      -> ID [ expr0 ] .
+lvalue      -> ( lvalue ) .
