@@ -40,11 +40,10 @@ statements  -> FOR ( lvalue = expr0 ) ( cond0 ) ( incr ) { statements } statemen
 statements  -> WHILE ( cond0 ) { statements } statements .
 statements  -> DO { statements } WHILE ( cond0 ) ; statements .
 statements  -> incr statements .
-statements  -> expr0 ; statements .
-statements  -> break ; statements .
+statements  -> break ; .
 statements  -> DELETE expr0 ; statements .
 statements  -> ID : statements .
-statements  -> goto ID ; statements .
+statements  -> goto ID ; .
 
 elseif      -> .
 elseif      -> ELSIF ( cond0 ) { statements } elseif .
@@ -67,7 +66,7 @@ op          -> - .
 op          -> * .
 op          -> / .
 op          -> % .
-op          -> ** .
+op          -> ^^ .
 op          -> << .
 op          -> >> .
 op          -> ^ .
@@ -90,7 +89,7 @@ expr2       -> expr2 * expr3 .
 expr2       -> expr2 / expr3 .
 expr2       -> expr2 % expr3 .
 expr2       -> expr3 .
-expr3       -> expr4 ** expr3 .
+expr3       -> expr4 ^^ expr3 .
 expr3       -> expr4 .
 expr4       -> expr4 << expr5 .
 expr4       -> expr4 >> expr5 .

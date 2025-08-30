@@ -13,7 +13,7 @@
 
 class Scanner{
     std::set<char> alphabet;
-    std::unordered_map<std::string, bool> states;
+    std::set<std::string> states;
     std::string startState;
     std::map<std::string, std::string> transitions;
 
@@ -21,13 +21,13 @@ class Scanner{
 
     Scanner();
 
-    static void formatError(const std::string& message);
+    static void formatError(const std::string& message, uint32_t pos, uint32_t line);
 
     static bool isChar(const std::string& str);
     static bool isRange(const std::string& str);
-    static bool isWhiteSpace(const char c);
+    static bool isWhiteSpace(char c);
 
-    static void formatToken(const std::ostringstream& oss, std::string& currentState);
+    static void formatToken(std::ostringstream& oss, std::string& currentState, std::ofstream& tokens);
 
 public:
     Scanner(const Scanner&) = delete;

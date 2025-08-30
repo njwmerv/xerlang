@@ -1,0 +1,35 @@
+"\n \t \b \r \a \' \" \? \\ \f \v \0"
+"""a b a sdasd ads AS]w[q=-e23-ia[s, da asd asdaxzc.;'e_+_"
+' '
+'\n' '\t' '\b''\r''\a''\'''\"' '\?' '\\' '\f' '\v' '\0'
+'a''B''c''D''e''F''g''H''i''j''k''L''m''n''o''p''Q''r''s''T''U''V''W''X''Y''Z'
+'!' '~'
+
+
+
+aaaaaAaaa
+AAAAAaaa_
+_aaaaaaaa
+_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
+,,,,,,,,,
+::;;
+()(())
+{ () { [[ )) }
++ ++ + +++
+- -- -> ---
+* ** ***
+/ // / ignore this
+% %%
+< << <= <=<< <<=
+> >> >= ->=
+^ ^^
+| ||
+& && &&&
+! != !==
+~
+
+= == ===
+. .. ? ??
+0x0 0xFedCbA90x87654321 0b102
+0-x0 01b+-1
+001234567890

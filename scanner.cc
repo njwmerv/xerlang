@@ -8,17 +8,16 @@
 #include <unordered_map>
 #include <vector>
 
-const std::string rawAlphabet = R"(a-z A-Z 0-9 ( ) { } [ _ ] = ! < > + - * / | ^ ~ % , : ; ' " &)";
+const std::string rawAlphabet = R"(a-z A-Z 0-9 ( ) { } [ _ ] = ! < > + - * / \ | ^ ~ % , . ? : ; ' " &)";
 const std::string rawStates =
 R"(s
-MAIN! INT! CHAR! BOOL! AUTO! CONST! RETURN! IF! ELSIF! ELSE!
-FOR! WHILE! DO! BREAK! DELETE! GOTO! NEW! SIZEOF! TRUE! FALSE!
-ID! DEC! HEX! BIN! STRLIT! CHARLIT! 0! NULL!
-notHEX notBIN notSTR char0 char1 charS
-:! (! )! -! ;! {! }! ,! [! ]! =!
-||! &&! ?! >=! >! <=! <! ==! !=!
-+! -! *! /! %! **! <<! >>! ^! |! &!
-!! ~! ++! --! ->! .!
+MAIN INT CHAR BOOL AUTO CONST RETURN IF ELSIF ELSE
+FOR WHILE DO BREAK DELETE GOTO NEW SIZEOF TRUE FALSE
+ID DEC HEX BIN STRLIT CHARLIT 0 NULL
+: ( ) - ; { } , [ ] =
+|| && ? >= > <= < == !=
++ - * / % ^^ << >> ^ | &
+! ~ ++ -- -> .
 )";
 const std::string rawTransitions =
 R"(s a-z A-Z _ ID
@@ -39,7 +38,6 @@ s - -
     - > ->
     - 1-9 DEC
 s * *
-    * * **
 s / /
 s % %
 s < <
@@ -49,6 +47,7 @@ s > >
     > > >>
     > = >=
 s ^ ^
+    ^ ^ ^^
 s | |
     | | ||
 s & &
@@ -70,11 +69,12 @@ notBIN 0-1 BIN
 s 1-9 DEC
     DEC 0-9 DEC
 s " notSTR
-    notSTR !-~ notSTR
+    notSTR ! #-[ ]-~ notSTR
     notSTR " STRLIT
+    notSTR \ notSTResc
+    notSTResc n t b r a ' " ? \ f v 0 notSTR
 s ' char0
-    char0 !-[ char1
-    char0 ]-~ char1
+    char0 !-[ ]-~ char1
     char0 \ charS
     charS n t b r a ' " ? \ f v 0 char1
     char1 ' CHARLIT
@@ -101,13 +101,7 @@ Scanner::Scanner(){
     iss.clear();
     iss.str(rawStates);
     while(iss >> str){
-        bool accepting = false;
-        if(str.back() == '!' && !isChar(str)){
-            str.pop_back();
-            accepting = true;
-        }
-        states.insert({str, accepting});
-
+        states.insert({str});
         if(!readFirst){
             startState = str;
             readFirst = true;
@@ -152,8 +146,14 @@ Scanner* Scanner::getInstance(){
 bool Scanner::isChar(const std::string& str) {return str.length() == 1; }
 bool Scanner::isRange(const std::string& str) {return str.length() == 3;}
 bool Scanner::isWhiteSpace(const char c) {return c == ' ' || c == '\t' || c == '\v';}
-void Scanner::formatError(const std::string& message) {std::cerr << "ERROR: " << message << std::endl;}
-void Scanner::formatToken(const std::ostringstream& oss, std::string& currentState){
+
+void Scanner::formatError(const std::string& message, const uint32_t pos, const uint32_t line) {
+    std::cerr << "ERROR: Invalid tokenization in:\n" << message << '\n';
+    for(int i = 1; i < pos; i++) std::cerr << " ";
+    std::cerr << "^~~~ at Line# " << line << std::endl;
+}
+
+void Scanner::formatToken(std::ostringstream& oss, std::string& currentState, std::ofstream& tokens){
     if(currentState == "0") currentState = "DEC";
     else if(oss.str() == "main" && currentState == "ID") currentState = "MAIN";
     else if(oss.str() == "int" && currentState == "ID") currentState = "INT";
@@ -176,6 +176,10 @@ void Scanner::formatToken(const std::ostringstream& oss, std::string& currentSta
     else if(oss.str() == "true" && currentState == "ID") currentState = "TRUE";
     else if(oss.str() == "false" && currentState == "ID") currentState = "FALSE";
     else if(oss.str() == "NULL" && currentState == "ID") currentState = "NULL";
+
+    tokens << currentState << " : " << oss.str() << "\n";
+    oss.str("");
+    oss.clear();
 }
 
 void Scanner::scan(const std::string& fileNameStem) const {
@@ -183,9 +187,11 @@ void Scanner::scan(const std::string& fileNameStem) const {
     std::ofstream tokens{fileNameStem + ".tokens"};
     tokens.clear();
 
+    uint32_t lineNumber = 0;
     bool error = false;
     std::string str;
-    while(std::getline(file, str) && !error){
+    while(std::getline(file, str)){
+        lineNumber++;
         std::string currentState = startState;
 
         // Ignore anything after "//", skip entirely if there's nothing before
@@ -196,34 +202,34 @@ void Scanner::scan(const std::string& fileNameStem) const {
         // Tokenize the line
         std::istringstream lineSS{str};
         std::ostringstream lexeme;
+        uint32_t pos = 0;
         char c;
-        while(lineSS.get(c) && !error){
+        while(lineSS.get(c)){
             try{
+                pos++;
                 if(isWhiteSpace(c) && currentState == startState) continue;
-                if(isWhiteSpace(c) && (currentState != "char0" || currentState != "notSTR")) throw std::invalid_argument{"got whitespace."};
                 if(!alphabet.contains(c)) throw std::invalid_argument{"Invalid character encountered: " + c};
                 const std::string& newState = transitions.at(currentState + c);
 
                 if(currentState == "DEC" && (std::stoll(lexeme.str() + c) > INT_MAX || std::stoll(lexeme.str() + c) < INT_MIN)){
                     throw std::invalid_argument{"Given out-of-range dec, starting new num."};
                 }
-                if(currentState == "BIN" && std::stoll(lexeme.str().substr(2, lexeme.str().size()) + c, nullptr, 2) > INT_MAX){
-                    throw std::invalid_argument{"Given out-of-range bin, starting new num."};
-                }
-                if(currentState == "HEX" && std::stoll(lexeme.str().substr(2, lexeme.str().size()) + c, nullptr, 16) > INT_MAX){
-                    throw std::invalid_argument{"Given out-of-range hex, starting new num."};
+                if(currentState == "BIN" || currentState == "HEX") {
+                    const std::string noPrefixNum = lexeme.str().substr(2, lexeme.str().size());
+                    if(currentState == "BIN" && std::stoll(noPrefixNum + c, nullptr, 2) > INT_MAX){
+                        throw std::invalid_argument{"Given out-of-range bin, starting new num."};
+                    }
+                    if(currentState == "HEX" && std::stoll(noPrefixNum + c, nullptr, 16) > INT_MAX){
+                        throw std::invalid_argument{"Given out-of-range hex, starting new num."};
+                    }
                 }
                 currentState = newState;
                 lexeme << c;
             }
             catch(std::exception& e){
-                if(states.at(currentState)){
-                    formatToken(lexeme, currentState);
+                if(states.contains(currentState) && currentState != startState){
+                    formatToken(lexeme, currentState, tokens);
 
-                    tokens << currentState << " : " << lexeme.str() << "\n";
-
-                    lexeme.str("");
-                    lexeme.clear();
                     currentState = startState;
                     if(transitions.contains(startState + c)){
                         currentState = transitions.at(startState + c);
@@ -231,38 +237,22 @@ void Scanner::scan(const std::string& fileNameStem) const {
                     }
                     else if(!isWhiteSpace(c)){
                         error = true;
-                        formatError("Invalid start of token found: " + lexeme.str());
+                        formatError(str + " (cause: " + lexeme.str() + ")", pos, lineNumber);
                         break;
                     }
                 }
                 else{
                     error = true;
-                    formatError(e.what());
+                    formatError(str + " (cause: " + lexeme.str() + ")", pos, lineNumber);
                     break;
                 }
             }
         }
         // END OF LINE
-        if(states.at(currentState)){
-            formatToken(lexeme, currentState);
-
-            tokens << currentState << " : " << lexeme.str() << "\n";
-
-            lexeme.str("");
-            lexeme.clear();
-            currentState = startState;
-            if(transitions.contains(startState + c)){
-                currentState = transitions.at(startState + c);
-                lexeme << c;
-            }
-            else if(!isWhiteSpace(c)){
-                error = true;
-                formatError("Invalid start of token found: " + lexeme.str());
-                break;
-            }
-        }
+        if(error) break;
+        if(states.contains(currentState) && currentState != startState) formatToken(lexeme, currentState, tokens);
         else if(!isWhiteSpace(c)){
-            error = true;
+            formatError(str + " (cause: " + lexeme.str() + ")", pos, lineNumber);
             break;
         }
     }
