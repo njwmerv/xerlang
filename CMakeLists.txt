@@ -3,4 +3,4 @@ project(Xerlang)
 
 set(CMAKE_CXX_STANDARD 23)
 
-add_executable(Xerlang main.cc scanner.cc)
+add_executable(Xerlang main.cc scanner/scanner.cc)
