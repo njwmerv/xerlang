@@ -2,14 +2,11 @@
 #define SCANNER_H
 
 #include <fstream>
-#include <iostream>
+#include <map>
 #include <mutex>
 #include <set>
 #include <sstream>
 #include <string>
-#include <unordered_map>
-#include <vector>
-#include <map>
 
 class Scanner{
     std::set<char> alphabet;

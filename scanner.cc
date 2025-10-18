@@ -5,7 +5,6 @@
 #include <set>
 #include <sstream>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 const std::string rawAlphabet = R"(a-z A-Z 0-9 ( ) { } [ _ ] = ! < > + - * / \ | ^ ~ % , . ? : ; ' " &)";
@@ -132,10 +131,6 @@ Scanner::Scanner(){
     transitions.insert({"notSTR ", "notSTR"});
     transitions.insert({"notSTR\t", "notSTR"});
     transitions.insert({"notSTR\v", "notSTR"});
-
-    // for(const auto& [from, to] : transitions){
-    //     std::cout << from.substr(0, from.size() - 1) << " == " << from.back() << " => " << to << std::endl;
-    // }
 }
 
 Scanner* Scanner::getInstance(){
