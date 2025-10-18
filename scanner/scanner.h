@@ -7,12 +7,13 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include "../util/types.h"
 
 class Scanner{
     std::set<char> alphabet;
-    std::set<std::string> states;
-    std::string startState;
-    std::map<std::string, std::string> transitions;
+    std::set<ScannerDFAState> states;
+    ScannerDFAState startState;
+    std::map<std::string, ScannerDFAState> transitions;
 
     static Scanner* instance;
 
@@ -24,7 +25,7 @@ class Scanner{
     static bool isRange(const std::string& str);
     static bool isWhiteSpace(char c);
 
-    static void formatToken(std::ostringstream& oss, std::string& currentState, std::ofstream& tokens);
+    static void formatToken(std::ostringstream& oss, ScannerDFAState& currentState, std::ofstream& tokens);
 
 public:
     Scanner(const Scanner&) = delete;

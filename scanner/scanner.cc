@@ -148,7 +148,7 @@ void Scanner::formatError(const std::string& message, const uint32_t pos, const 
     std::cerr << "^~~~ at Line# " << line << std::endl;
 }
 
-void Scanner::formatToken(std::ostringstream& oss, std::string& currentState, std::ofstream& tokens){
+void Scanner::formatToken(std::ostringstream& oss, ScannerDFAState& currentState, std::ofstream& tokens){
     if(currentState == "0") currentState = "DEC";
     else if(oss.str() == "main" && currentState == "ID") currentState = "MAIN";
     else if(oss.str() == "int" && currentState == "ID") currentState = "INT";
@@ -187,7 +187,7 @@ void Scanner::scan(const std::string& fileNameStem) const {
     std::string str;
     while(std::getline(file, str)){
         lineNumber++;
-        std::string currentState = startState;
+        ScannerDFAState currentState = startState;
 
         // Ignore anything after "//", skip entirely if there's nothing before
         const size_t commentStart = str.find("//");
