@@ -1,38 +1,43 @@
-hex : () -> int {
-    return 0x8000000;
-    return    0x7FFFFFFF;
+is_capitalized : (c: char) -> bool {
+    return c == 'A' || c == 'B' || c == 'C';
 }
 
-neg : () -> int {
-    return -2147483648;
+struct Data {
+    char a;
+    char b;
+    int c;
 }
 
-sub : () -> int {
-    return 0b01111111111111111111111111111111;
-}
+main : () -> int {
+    char c = read(); // should read ONE char from stdin
 
-add : () -> int {
-    return 21474836470;
-}
-// comment here
-// also comment here
-
-is_negative: int a -> bool { // BLEEHHHH
-    if (a == 0) {
-        return FALSE;
+    if (c == 'a') {
+        print(c); // should print 'a' to stdout
     }
-    else if (a < 0) {
-        return TRUE;
+    elif (is_capitalized(c)) {
+        int x = 5;
+        print(x); // should output '5' to stdout
     }
     else {
-        return FALSE;
+        for (int i = 0; i < 10; i++) {
+            print(i);
+        }
+        while (c != 'a') {
+            print(c);
+            if (c == a) {
+                break;
+            }
+        }
     }
 
-    while (a) {
+    struct Data* arr = new struct Data [5];
 
-    }
+    arr[0]->a = 'a';
+    arr[1]->a = 'b';
+    arr[4]->c = 100;
+    
+    print(arr[0]->a);
+
+    return 0;
 }
 
-main                : (
-) ->
-int { return 0b1; }
