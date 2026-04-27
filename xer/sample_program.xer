@@ -38,6 +38,8 @@ main : () -> int {
     
     print(arr[0]->a);
 
+    delete(arr);
+
     return 0;
 }
 
