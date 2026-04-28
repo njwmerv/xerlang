@@ -1,254 +1,219 @@
 #include "scanner.h"
-#include <fstream>
+#include <array>
 #include <iostream>
-#include <mutex>
-#include <set>
 #include <sstream>
-#include <string>
-#include <vector>
+#include <unordered_map>
 
-const std::string rawAlphabet = R"(a-z A-Z 0-9 ( ) { } [ _ ] = ! < > + - * / \ | ^ ~ % , . ? : ; ' " &)";
-const std::string rawStates =
-R"(s
-MAIN INT CHAR BOOL AUTO CONST RETURN IF ELSIF ELSE
-FOR WHILE DO BREAK DELETE GOTO NEW SIZEOF TRUE FALSE
-ID DEC HEX BIN STRLIT CHARLIT 0 NULL
-: ( ) - ; { } , [ ] =
-|| && ? >= > <= < == !=
-+ - * / % ^^ << >> ^ | &
-! ~ ++ -- -> .
-)";
-const std::string rawTransitions =
-R"(s a-z A-Z _ ID
-    ID a-z A-Z _ 0-9 ID
-s , ,
-s ; ;
-s : :
-s ( (
-s ) )
-s { {
-s } }
-s [ [
-s ] ]
-s + +
-    + + ++
-s - -
-    - - --
-    - > ->
-    - 1-9 DEC
-s * *
-s / /
-s % %
-s < <
-    < < <<
-    < = <=
-s > >
-    > > >>
-    > = >=
-s ^ ^
-    ^ ^ ^^
-s | |
-    | | ||
-s & &
-    & & &&
-s ! !
-    ! = !=
-s ~ ~
-s . .
-s = =
-    = = ==
-s ? ?
-s 0 0
-    0 x notHEX
-    0 b notBIN
-notHEX 0-9 a-f A-F HEX
-    HEX 0-9 a-f A-F HEX
-notBIN 0-1 BIN
-    BIN 0-1 BIN
-s 1-9 DEC
-    DEC 0-9 DEC
-s " notSTR
-    notSTR ! #-[ ]-~ notSTR
-    notSTR " STRLIT
-    notSTR \ notSTResc
-    notSTResc n t b r a ' " ? \ f v 0 notSTR
-s ' char0
-    char0 !-[ ]-~ char1
-    char0 \ charS
-    charS n t b r a ' " ? \ f v 0 char1
-    char1 ' CHARLIT
-)";
+using namespace Scanner;
 
-Scanner* Scanner::instance = nullptr;
-
-Scanner::Scanner(){
-    // Create alphabet
-    std::istringstream iss{rawAlphabet};
-    std::string str;
-    while(iss >> str){
-        if(isChar(str)) alphabet.insert(str.front());
-        else{
-            for(char c = str.front(); c <= str.back(); c++) alphabet.insert(c);
-        }
+std::ostream& operator<<(std::ostream& os, Scanner::ScannerDFAState state) {
+    switch (state) {
+        case MAIN: os << "MAIN"; break;
+        case INT: os << "INT"; break;
+        case CHAR: os << "CHAR"; break;
+        case BOOL: os << "BOOL"; break;
+        case TRUE: os << "TRUE"; break;
+        case FALSE: os << "FALSE"; break;
+        case NIL: os << "NIL"; break;
+        case NUM: os << "NUM"; break;
+        case CHARLIT: os << "CHARLIT"; break;
+        case ID: os << "ID"; break;
+        case RETURN: os << "RETURN"; break;
+        case IF: os << "IF"; break;
+        case ELIF: os << "ELIF"; break;
+        case ELSE: os << "ELSE"; break;
+        case FOR: os << "FOR"; break;
+        case WHILE: os << "WHILE"; break;
+        case BREAK: os << "BREAK"; break;
+        case DELETE: os << "DELETE"; break;
+        case NEW: os << "NEW"; break;
+        case COLON: os << "COLON"; break;
+        case LPAREN: os << "LPAREN"; break;
+        case RPAREN: os << "RPAREN"; break;
+        case SEMI: os << "SEMI"; break;
+        case LCURLY: os << "LCURLY"; break;
+        case RCURLY: os << "RCURLY"; break;
+        case COMMA: os << "COMMA"; break;
+        case LBRACK: os << "LBRACK"; break;
+        case RBRACK: os << "RBRACK"; break;
+        case BECOMES: os << "BECOMES"; break;
+        case NOT: os << "NOT"; break;
+        case OR: os << "OR"; break;
+        case AND: os << "AND"; break;
+        case GEQ: os << "GEQ"; break;
+        case GT: os << "GT"; break;
+        case LEQ: os << "LEQ"; break;
+        case LT: os << "LT"; break;
+        case EQUALS: os << "EQUALS"; break;
+        case NEQ: os << "NEQ"; break;
+        case PLUS: os << "PLUS"; break;
+        case SUB: os << "SUB"; break;
+        case AST: os << "AST"; break;
+        case DIV: os << "DIV"; break;
+        case MOD: os << "MOD"; break;
+        case LSHIFT: os << "LSHIFT"; break;
+        case RSHIFT: os << "RSHIFT"; break;
+        case EXP: os << "EXP"; break;
+        case BITOR: os << "BITOR"; break;
+        case BITAND: os << "BITAND"; break;
+        case BITNOT: os << "BITNOT"; break;
+        case INCR: os << "INCR"; break;
+        case DECR: os << "DECR"; break;
+        case ARROW: os << "ARROW"; break;
+        case DOT: os << "DOT"; break;
+        case STRUCT: os << "STRUCT"; break;
+        default: os << "NONE"; break;
     }
-    alphabet.insert(' ');
-    alphabet.insert('\t');
-    alphabet.insert('\v');
+    return os;
+}
 
-    // Create DFA States
-    bool readFirst = false;
-    iss.clear();
-    iss.str(rawStates);
-    while(iss >> str){
-        states.insert({str});
-        if(!readFirst){
-            startState = str;
-            readFirst = true;
-        }
+using Transitions = std::array<std::array<ScannerDFAState, 128>, NUM_STATES>;
+consteval Transitions buildTransitions() {
+    Transitions t{};
+
+    for (auto& row : t) row.fill(ERROR);
+
+    char c;
+    for (c = 'a'; c <= 'z'; c++) {
+        t[START][c] = ID;
+        t[ID][c] = ID;
+    }
+    for (c = 'A'; c <= 'Z'; c++) {
+        t[START][c] = ID;
+        t[ID][c] = ID;
+    }
+    t[START]['_'] = t[ID]['_'] = ID;
+
+    for (c = '0'; c <= '9'; c++) {
+        t[START][c] = NUM;
+        t[ID][c] = ID;
+        t[NUM][c] = NUM;
     }
 
-    // Create DFA Transitions
-    iss.clear();
-    iss.str(rawTransitions);
-    while(std::getline(iss, str)){
-        std::string fromState, symbols, toState;
-        std::istringstream line{str};
-        std::vector<std::string> lineVector;
-        while(line >> str) lineVector.push_back(str);
-        fromState = lineVector.front();
-        toState = lineVector.back();
-        lineVector.pop_back();
-        for(int i = 1; i < lineVector.size(); i++) {
-            std::string& s = lineVector[i];
-            if(isChar(s)) symbols += s;
-            else if(isRange(s)){
-                for(char c = s.front(); c <= s.back(); c++) symbols += c;
+    t[START][':'] = COLON;
+    t[START]['('] = LPAREN;
+    t[START][')'] = RPAREN;
+    t[START][';'] = SEMI;
+    t[START]['{'] = LCURLY;
+    t[START]['}'] = RCURLY;
+    t[START][','] = COMMA;
+    t[START]['['] = LBRACK;
+    t[START][']'] = RBRACK;
+
+    t[START]['='] = BECOMES;
+    t[BECOMES]['='] = EQUALS;
+
+    t[START]['!'] = NOT;
+    t[NOT]['='] = NEQ;
+
+    t[START]['~'] = BITNOT;
+
+    t[START]['|'] = BITOR;
+    t[BITOR]['|'] = OR;
+
+    t[START]['&'] = BITAND;
+    t[BITAND]['&'] = AND;
+
+    t[START]['>'] = GT;
+    t[GT]['='] = GEQ;
+    t[GT]['>'] = RSHIFT;
+
+    t[START]['<'] = LT;
+    t[LT]['='] = LEQ;
+    t[LT]['<'] = LSHIFT;
+
+    t[START]['+'] = PLUS;
+    t[PLUS]['+'] = INCR;
+
+    t[START]['*'] = AST;
+
+    t[START]['/'] = DIV;
+
+    t[START]['%'] = MOD;
+
+    t[START]['^'] = EXP;
+
+    t[START]['.'] = DOT;
+
+    t[START]['-'] = SUB;
+    t[SUB]['-'] = DECR;
+    t[SUB]['>'] = ARROW;
+
+    t[NOT_CHARLIT]['\''] = CHARLIT;
+
+    t[START]['\''] = APOS;
+    t[APOS]['\\'] = APOSLASH;
+
+    for (c = ' '; c <= '~'; c++) t[APOS][c] = NOT_CHARLIT;
+
+    t[APOSLASH]['\\'] = NOT_CHARLIT;
+    t[APOSLASH]['\"'] = NOT_CHARLIT;
+    t[APOSLASH]['\''] = NOT_CHARLIT;
+    t[APOSLASH]['\?'] = NOT_CHARLIT;
+    t[APOS]['\"'] = ERROR;
+    t[APOS]['\''] = ERROR;
+    t[APOS]['\?'] = ERROR;
+    t[APOSLASH]['n'] = NOT_CHARLIT;
+    t[APOSLASH]['t'] = NOT_CHARLIT;
+    t[APOSLASH]['r'] = NOT_CHARLIT;
+    t[APOSLASH]['b'] = NOT_CHARLIT;
+    t[APOSLASH]['a'] = NOT_CHARLIT;
+    t[APOSLASH]['0'] = NOT_CHARLIT;
+    t[APOSLASH]['f'] = NOT_CHARLIT;
+    t[APOSLASH]['v'] = NOT_CHARLIT;
+
+    return t;
+}
+
+constexpr Transitions transitions = buildTransitions();
+
+const std::unordered_map<std::string_view, ScannerDFAState> KEYWORDS = {
+    {"main", MAIN}, {"int", INT}, {"char", CHAR}, {"bool", BOOL}, {"struct", STRUCT},
+    {"true", TRUE}, {"false", FALSE}, {"NULL", NIL},
+    {"return", RETURN}, {"if", IF}, {"elif", ELIF}, {"else", ELSE}, {"for", FOR}, {"while", WHILE}, {"break", BREAK},
+    {"delete", DELETE}, {"new", NEW},
+};
+
+void scan(std::istream& is, std::ostream& os, std::vector<Token>& stream) {
+    ScannerDFAState state = START;
+    std::string lexeme;
+
+    char c;
+    size_t line_num = 0;
+    try{
+        while (is.get(c)) {
+            if (c == '\n') line_num++;
+            if (transitions[state][c] == ERROR && state == START) { // INVALID TOKEN START!
+                if(c == ' ' || c == '\n' || c == '\t' || c == '\v') continue;
+                throw std::exception{};
+            }
+            else if (transitions[state][c] == ERROR) { // NEW TOKEN!
+                is.putback(c);
+
+                if (state == ID && KEYWORDS.contains(lexeme)) state = KEYWORDS.at(lexeme);
+                else if (state == NUM) {
+                    long long val = std::strtoll(lexeme.c_str(), nullptr, 10);
+                    if (val > INT32_MAX || val < INT32_MIN) throw std::exception{};
+                }
+
+                os << state  << " : " << lexeme << std::endl;
+                stream.push_back(Token{std::move(lexeme), state});
+
+                lexeme.clear();
+                state = START;
+            }
+            else if (transitions[state][c] != ERROR) { // REGULAR TRANSITION!
+                lexeme += c;
+                state = transitions[state][c];
             }
         }
-        for(const char c : symbols) transitions.insert({fromState + c, toState});
-    }
-    transitions.insert({"char0 ", "char1"});
-    transitions.insert({"notSTR ", "notSTR"});
-    transitions.insert({"notSTR\t", "notSTR"});
-    transitions.insert({"notSTR\v", "notSTR"});
-}
-
-Scanner* Scanner::getInstance(){
-    if(instance == nullptr) instance = new Scanner();
-    return instance;
-}
-
-bool Scanner::isChar(const std::string& str) {return str.length() == 1; }
-bool Scanner::isRange(const std::string& str) {return str.length() == 3;}
-bool Scanner::isWhiteSpace(const char c) {return c == ' ' || c == '\t' || c == '\v';}
-
-void Scanner::formatError(const std::string& message, const uint32_t pos, const uint32_t line) {
-    std::cerr << "ERROR: Invalid tokenization in:\n" << message << '\n';
-    for(int i = 1; i < pos; i++) std::cerr << " ";
-    std::cerr << "^~~~ at Line# " << line << std::endl;
-}
-
-void Scanner::formatToken(std::ostringstream& oss, ScannerDFAState& currentState, std::ofstream& tokens){
-    if(currentState == "0") currentState = "DEC";
-    else if(oss.str() == "main" && currentState == "ID") currentState = "MAIN";
-    else if(oss.str() == "int" && currentState == "ID") currentState = "INT";
-    else if(oss.str() == "char" && currentState == "ID") currentState = "CHAR";
-    else if(oss.str() == "bool" && currentState == "ID") currentState = "BOOL";
-    else if(oss.str() == "auto" && currentState == "ID") currentState = "auto";
-    else if(oss.str() == "const" && currentState == "ID") currentState = "CONST";
-    else if(oss.str() == "return" && currentState == "ID") currentState = "RETURN";
-    else if(oss.str() == "if" && currentState == "ID") currentState = "IF";
-    else if(oss.str() == "elsif" && currentState == "ID") currentState = "ELSIF";
-    else if(oss.str() == "else" && currentState == "ID") currentState = "ELSE";
-    else if(oss.str() == "for" && currentState == "ID") currentState = "FOR";
-    else if(oss.str() == "while" && currentState == "ID") currentState = "WHILE";
-    else if(oss.str() == "do" && currentState == "ID") currentState = "DO";
-    else if(oss.str() == "break" && currentState == "ID") currentState = "BREAK";
-    else if(oss.str() == "delete" && currentState == "ID") currentState = "DELETE";
-    else if(oss.str() == "goto" && currentState == "ID") currentState = "GOTO";
-    else if(oss.str() == "new" && currentState == "ID") currentState = "NEW";
-    else if(oss.str() == "sizeof" && currentState == "ID") currentState = "SIZEOF";
-    else if(oss.str() == "true" && currentState == "ID") currentState = "TRUE";
-    else if(oss.str() == "false" && currentState == "ID") currentState = "FALSE";
-    else if(oss.str() == "NULL" && currentState == "ID") currentState = "NULL";
-
-    tokens << currentState << " : " << oss.str() << "\n";
-    oss.str("");
-    oss.clear();
-}
-
-void Scanner::scan(const std::string& fileNameStem) const {
-    std::ifstream file{fileNameStem + ".xer"};
-    std::ofstream tokens{fileNameStem + ".tokens"};
-    tokens.clear();
-
-    uint32_t lineNumber = 0;
-    bool error = false;
-    std::string str;
-    while(std::getline(file, str)){
-        lineNumber++;
-        ScannerDFAState currentState = startState;
-
-        // Ignore anything after "//", skip entirely if there's nothing before
-        const size_t commentStart = str.find("//");
-        str = str.substr(0, commentStart);
-        if(str.empty()) continue;
-
-        // Tokenize the line
-        std::istringstream lineSS{str};
-        std::ostringstream lexeme;
-        uint32_t pos = 0;
-        char c;
-        while(lineSS.get(c)){
-            try{
-                pos++;
-                if(isWhiteSpace(c) && currentState == startState) continue;
-                if(!alphabet.contains(c)) throw std::invalid_argument{"Invalid character encountered: " + c};
-                const std::string& newState = transitions.at(currentState + c);
-
-                if(currentState == "DEC" && (std::stoll(lexeme.str() + c) > INT_MAX || std::stoll(lexeme.str() + c) < INT_MIN)){
-                    throw std::invalid_argument{"Given out-of-range dec, starting new num."};
-                }
-                if(currentState == "BIN" || currentState == "HEX") {
-                    const std::string noPrefixNum = lexeme.str().substr(2, lexeme.str().size());
-                    if(currentState == "BIN" && std::stoll(noPrefixNum + c, nullptr, 2) > INT_MAX){
-                        throw std::invalid_argument{"Given out-of-range bin, starting new num."};
-                    }
-                    if(currentState == "HEX" && std::stoll(noPrefixNum + c, nullptr, 16) > INT_MAX){
-                        throw std::invalid_argument{"Given out-of-range hex, starting new num."};
-                    }
-                }
-                currentState = newState;
-                lexeme << c;
-            }
-            catch(std::exception& e){
-                if(states.contains(currentState) && currentState != startState){
-                    formatToken(lexeme, currentState, tokens);
-
-                    currentState = startState;
-                    if(transitions.contains(startState + c)){
-                        currentState = transitions.at(startState + c);
-                        lexeme << c;
-                    }
-                    else if(!isWhiteSpace(c)){
-                        error = true;
-                        formatError(str + " (cause: " + lexeme.str() + ")", pos, lineNumber);
-                        break;
-                    }
-                }
-                else{
-                    error = true;
-                    formatError(str + " (cause: " + lexeme.str() + ")", pos, lineNumber);
-                    break;
-                }
-            }
-        }
-        // END OF LINE
-        if(error) break;
-        if(states.contains(currentState) && currentState != startState) formatToken(lexeme, currentState, tokens);
-        else if(!isWhiteSpace(c)){
-            formatError(str + " (cause: " + lexeme.str() + ")", pos, lineNumber);
-            break;
-        }
+    } catch (std::exception& e) {
+        is.putback(c);
+        std::string line;
+        std::getline(is, line, '\n');
+        std::cerr << lexeme << line << std::endl;
+        for (int i = 0; i < lexeme.length(); i++) std::cerr << ' ';
+        std::cerr << "^~~~ ERROR in line#" << line_num << std::endl;
+        return;
     }
 }

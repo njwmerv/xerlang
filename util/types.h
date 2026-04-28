@@ -4,10 +4,6 @@
 #include <string>
 #include <unordered_map>
 
-// Scanner
-typedef std::string ScannerDFAState;
-typedef std::string Token;
-
 // Parser
 typedef int ParserDFAState;
 typedef std::string Symbol; // (non-)terminal

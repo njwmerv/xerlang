@@ -1,10 +1,14 @@
+#include <fstream>
 #include <iostream>
-#include <string>
 #include "scanner/scanner.h"
 
 int main() {
-    const Scanner* scanner = Scanner::getInstance();
+    std::ifstream ifs{"../xer/sample_program.xer"};
+    std::ofstream ofs{"../xer/sample_program.tokens"};
+    std::vector<Token> stream;
+    scan(ifs, ofs, stream);
 
-    const std::string fileNameStem = "../xer/sample_program";
-    scanner->scan(fileNameStem);
+    for (auto& token : stream) {
+        std::cout << token.lexeme << std::endl;
+    }
 }
