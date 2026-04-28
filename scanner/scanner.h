@@ -26,11 +26,11 @@ namespace Scanner {
 
 std::ostream& operator<<(std::ostream& os, Scanner::ScannerDFAState state);
 
-struct Token {
+typedef struct Token {
     std::string lexeme;
     Scanner::ScannerDFAState type;
-};
+} Token;
 
-void scan(std::istream& is, std::ostream& os, std::vector<Token>& stream);
+void scan(std::istream& is, std::ostream& os, std::vector<Token>& stream, std::ostream& err);
 
 #endif //SCANNER_H

@@ -6,6 +6,10 @@
 
 using namespace Scanner;
 
+inline bool is_accepting_state(Scanner::ScannerDFAState state) {
+    return state != START && state != APOS && state != APOSLASH && state != NOT_CHARLIT;
+}
+
 std::ostream& operator<<(std::ostream& os, Scanner::ScannerDFAState state) {
     switch (state) {
         case MAIN: os << "MAIN"; break;
@@ -62,6 +66,9 @@ std::ostream& operator<<(std::ostream& os, Scanner::ScannerDFAState state) {
         case ARROW: os << "ARROW"; break;
         case DOT: os << "DOT"; break;
         case STRUCT: os << "STRUCT"; break;
+        case START: os << "START"; break;
+        case APOS: os << "APOS"; break;
+        case NOT_CHARLIT: os << "NOT_CHARLIT"; break;
         default: os << "NONE"; break;
     }
     return os;
@@ -142,7 +149,6 @@ consteval Transitions buildTransitions() {
     t[NOT_CHARLIT]['\''] = CHARLIT;
 
     t[START]['\''] = APOS;
-    t[APOS]['\\'] = APOSLASH;
 
     for (c = ' '; c <= '~'; c++) t[APOS][c] = NOT_CHARLIT;
 
@@ -150,6 +156,7 @@ consteval Transitions buildTransitions() {
     t[APOSLASH]['\"'] = NOT_CHARLIT;
     t[APOSLASH]['\''] = NOT_CHARLIT;
     t[APOSLASH]['\?'] = NOT_CHARLIT;
+    t[APOS]['\\'] = APOSLASH;
     t[APOS]['\"'] = ERROR;
     t[APOS]['\''] = ERROR;
     t[APOS]['\?'] = ERROR;
@@ -174,27 +181,30 @@ const std::unordered_map<std::string_view, ScannerDFAState> KEYWORDS = {
     {"delete", DELETE}, {"new", NEW},
 };
 
-void scan(std::istream& is, std::ostream& os, std::vector<Token>& stream) {
+void catch_num_error(const std::string& lexeme) {
+    const long long val = std::strtoll(lexeme.c_str(), nullptr, 10);
+    if (val > INT32_MAX || val < INT32_MIN) throw std::exception{};
+    if (lexeme.at(0) == '0' && lexeme.length() > 1) throw std::exception{};
+}
+
+void scan(std::istream& is, std::ostream& os, std::vector<Token>& stream, std::ostream& err = std::cerr) {
     ScannerDFAState state = START;
     std::string lexeme;
 
     char c;
-    size_t line_num = 0;
+    size_t line_num = 1;
     try{
         while (is.get(c)) {
             if (c == '\n') line_num++;
             if (transitions[state][c] == ERROR && state == START) { // INVALID TOKEN START!
-                if(c == ' ' || c == '\n' || c == '\t' || c == '\v') continue;
+                if(c == ' ' || c == '\n' || c == '\t' || c == '\v' || c == '\r') continue;
                 throw std::exception{};
             }
             else if (transitions[state][c] == ERROR) { // NEW TOKEN!
                 is.putback(c);
 
                 if (state == ID && KEYWORDS.contains(lexeme)) state = KEYWORDS.at(lexeme);
-                else if (state == NUM) {
-                    long long val = std::strtoll(lexeme.c_str(), nullptr, 10);
-                    if (val > INT32_MAX || val < INT32_MIN) throw std::exception{};
-                }
+                else if (state == NUM) catch_num_error(lexeme);
 
                 os << state  << " : " << lexeme << std::endl;
                 stream.push_back(Token{std::move(lexeme), state});
@@ -210,10 +220,17 @@ void scan(std::istream& is, std::ostream& os, std::vector<Token>& stream) {
     } catch (std::exception& e) {
         is.putback(c);
         std::string line;
-        std::getline(is, line, '\n');
-        std::cerr << lexeme << line << std::endl;
-        for (int i = 0; i < lexeme.length(); i++) std::cerr << ' ';
-        std::cerr << "^~~~ ERROR in line#" << line_num << std::endl;
+        std::getline(is, line, '\r');
+        err << lexeme << line << std::endl;
+        for (int i = 0; i < lexeme.length()-1; i++) err << ' ';
+        err << "^~~~ ERROR in line#" << line_num << std::endl;
         return;
+    }
+    if (!lexeme.empty() && is_accepting_state(state)) { // Leftovers!
+        if (state == ID && KEYWORDS.contains(lexeme)) state = KEYWORDS.at(lexeme);
+        else if (state == NUM) catch_num_error(lexeme);
+
+        os << state  << " : " << lexeme << std::endl;
+        stream.push_back(Token{std::move(lexeme), state});
     }
 }
