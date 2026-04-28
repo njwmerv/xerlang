@@ -3,8 +3,8 @@ project(Xerlang VERSION 0.1.0 LANGUAGES CXX)
 
 add_library(XerlangCore
   # SOURCEs
-  parser/ast.cc
-  scanner/scanner.cc
+  parser/ast.cpp
+  scanner/scanner.cpp
   # HEADERs
   parser/ast.h
   parser/parser.h
@@ -18,6 +18,6 @@ target_include_directories(XerlangCore PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 
-add_executable(Xerlang main.cc scanner/scanner.cc)
+add_executable(Xerlang main.cpp scanner/scanner.cpp)
 
 target_link_libraries(Xerlang PRIVATE XerlangCore)
