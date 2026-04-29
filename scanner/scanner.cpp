@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
+#include <limits>
 
 using namespace Scanner;
 
@@ -196,7 +197,11 @@ void scan(std::istream& is, std::ostream& os, std::vector<Token>& stream, std::o
     try{
         while (is.get(c)) {
             if (c == '\n') line_num++;
-            if (transitions[state][c] == ERROR && state == START) { // INVALID TOKEN START!
+            if (c == '#') { // COMMENT -> skip line!
+                is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                line_num++;
+            }
+            else if (transitions[state][c] == ERROR && state == START) { // INVALID TOKEN START!
                 if(c == ' ' || c == '\n' || c == '\t' || c == '\v' || c == '\r') continue;
                 throw std::exception{};
             }
