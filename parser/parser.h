@@ -1,27 +1,42 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include <stack>
-#include "../util/types.h"
-#include "ast.h"
+#include <string>
+#include <unordered_map>
 
-class Parser{
-    std::stack<Symbol> symbolStack;
-    std::stack<ParserDFAState> stateStack;
+namespace Parser {
+    enum ParserSymbol {
+        // TERMINATING
+        MAIN, READ, PRINT, INT, CHAR, BOOL, STRUCT,
+        TRUE, FALSE, NIL, NUM, CHARLIT, ID,
+        RETURN, IF, ELIF, ELSE, FOR, WHILE, BREAK,
+        DELETE, NEW,
+        COLON, LPAREN, RPAREN, SEMI, LCURLY, RCURLY, COMMA, LBRACK, RBRACK, BECOMES,
+        NOT, OR, AND, GEQ, GT, LEQ, LT, EQUALS, NEQ,
+        PLUS, SUB, MULT, DIV, MOD, LSHIFT, RSHIFT, EXP,
+        BITOR, BITXOR, BITAND, BITNOT,
+        AT, ADDR, INCR, DECR, ARROW, DOT,
 
-    static Parser* instance;
+        // NON-TERMINATING
+        start, BoF, EoF,
+        procedures, procedure, main,
+        type, star,
+        params, dcls, dcl,
+        statements, statement, ifs, forprologue, forepilogue,
+        lvalue, expr1, expr2, expr3, expr4, expr5, expr6, expr7, expr8, expr9,
+        args, structdef,
 
-    Parser();
+        // MISC
+        ERROR, NUM_SYMBOLS,
+    };
+}
 
-public:
-    Parser(const Parser&) = delete;
-    Parser& operator=(const Parser&) = delete;
-    Parser(Parser&&) = delete;
-    Parser& operator=(Parser&&) = delete;
+typedef int Type;
 
-    static Parser* getInstance();
+struct Production;
 
-    AST* parse(std::ifstream& tokenStream);
-};
+struct ASTNode;
+
+struct Procedure;
 
 #endif //PARSER_H

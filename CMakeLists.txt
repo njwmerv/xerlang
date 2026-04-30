@@ -3,13 +3,12 @@ project(Xerlang VERSION 0.1.0 LANGUAGES CXX)
 
 add_library(XerlangCore
   # SOURCEs
-  parser/ast.cpp
   scanner/scanner.cpp
   # HEADERs
-  parser/ast.h
   parser/parser.h
   scanner/scanner.h
   util/types.h
+  parser/parser.cpp
 )
 
 target_compile_features(XerlangCore PUBLIC cxx_std_23)
