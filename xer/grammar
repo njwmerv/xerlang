@@ -1,135 +1,122 @@
-procedures  -> main .
-procedures  -> procedure procedures .
-procedures  -> decl procedures .
-procedures  -> struct ID { fields } ; .
-procedures  -> ID : ( params ) -> type ; .
+start → BoF procedures EoF
 
-decl        -> type ID ; .
-decl        -> type ID = expr0 ; .
-decl        -> auto ID = expr0 ; .
-decl        -> const type ID ; .
-decl        -> const type ID = expr0 ; .
-decl        -> const auto ID = expr0 ; .
+procedures → dcl SEMI procedures
+procedures → dcl BECOMES expr1 SEMI procedures
+procedures → structdef procedures
+procedures → procedure procedures
+procedures → main
 
-fields      -> .
-fields      -> decl ; fields .
+procedure → ID COLON LPAREN params RPAREN ARROW type LCURLY statements RCURLY
+main → MAIN COLON LPAREN RPAREN ARROW INT LCURLY statements RCURLY
 
-main        -> MAIN : ( ) -> INT { statements } .
-main        -> MAIN : ( INT ID , CHAR * * ID ) -> INT { statements } .
+structdef → STRUCT ID LCURLY dcls RCURLY SEMI
 
-procedure   -> ID : ( params ) -> type { statements } .
-procedure   -> ID : decl -> type { statements } .
+params → .
+params → dcls
+dcls → dcl
+dcls → dcl COMMA dcls
+dcls → dcl SEMI dcls
 
-params      -> decl .
-params      -> decl , params .
+dcl → type ID
 
-type        -> INT ptr .
-type        -> CHAR ptr .
-type        -> BOOL ptr .
-type        -> ID ptr .
+statements → statements statement
+statements → .
 
-ptr         -> .
-ptr         -> * ptr .
+statement → dcl SEMI
+statement → dcl BECOMES expr1 SEMI
+statement → expr1 BECOMES expr1 SEMI
+statement → IF LPAREN expr1 RPAREN LCURLY statements RCURLY ifs
+statement → WHILE LPAREN expr1 RPAREN LCURLY statements RCURLY
+statement → FOR LPAREN forprologue SEMI expr1 SEMI forepilogue RPAREN LCURLY statements RCURLY
+statement → BREAK SEMI
+statement → expr1 SEMI
+statement → NEW type LBRACK NUM RBRACK SEMI
+statement → DELETE expr1 SEMI
+statement → PRINT LPAREN args RPAREN SEMI
 
-statements  -> .
-statements  -> RETURN expr0 ; .
-statements  -> decl statements .
-statements  -> IF ( cond0 ) { statements } elseif statements .
-statements  -> FOR ( decl ) ( cond0 ) ( incr ) { statements } statements .
-statements  -> FOR ( lvalue = expr0 ) ( cond0 ) ( incr ) { statements } statements .
-statements  -> WHILE ( cond0 ) { statements } statements .
-statements  -> DO { statements } WHILE ( cond0 ) ; statements .
-statements  -> incr statements .
-statements  -> break ; .
-statements  -> DELETE expr0 ; statements .
-statements  -> ID : statements .
-statements  -> goto ID ; .
+ifs → .
+ifs → ELIF LPAREN expr1 RPAREN LCURLY statements RCURLY ifs
+ifs → ELSE LCURLY statements RCURLY
 
-elseif      -> .
-elseif      -> ELSIF ( cond0 ) { statements } elseif .
-elseif      -> ELSE { statements } .
+forprologue → dcl BECOMES expr1
+forprologue → expr1 BECOMES expr1
 
-cond0       -> cond0 || expr0 .
-cond0       -> cond1 .
-cond1       -> cond1 && expr0 .
-cond1       -> ( cond0 ) .
-cond1       -> expr0 .
+forepilogue → expr1 BECOMES expr1
+forepilogue → expr1
 
-incr        -> .
-incr        -> lvalue op = expr0 ; incr .
-incr        -> lvalue ++ ; incr .
-incr        -> lvalue -- ; incr .
+args → expr1
+args → expr1 COMMA args
 
-op          -> .
-op          -> + .
-op          -> - .
-op          -> * .
-op          -> / .
-op          -> % .
-op          -> ^^ .
-op          -> << .
-op          -> >> .
-op          -> ^ .
-op          -> | .
-op          -> & .
+type → INT star
+type → CHAR star
+type → BOOL star
+type → STRUCT ID star
 
-expr0       -> ( type ) expr1 .
-expr0       -> expr1 >= expr1 .
-expr0       -> expr1 > expr1 .
-expr0       -> expr1 <= expr .1 .
-expr0       -> expr1 < expr1 .
-expr0       -> expr1 == expr .1 .
-expr0       -> expr1 != expr1 .
-expr0       -> expr1 .
-expr1       -> ( cond0 ) ? expr1 : expr1 .
-expr1       -> expr1 + expr2 .
-expr1       -> expr1 - expr2 .
-expr1       -> expr2 .
-expr2       -> expr2 * expr3 .
-expr2       -> expr2 / expr3 .
-expr2       -> expr2 % expr3 .
-expr2       -> expr3 .
-expr3       -> expr4 ^^ expr3 .
-expr3       -> expr4 .
-expr4       -> expr4 << expr5 .
-expr4       -> expr4 >> expr5 .
-expr4       -> expr4 << expr5 .
-expr4       -> expr4 ^ expr5 .
-expr4       -> expr4 | expr5 .
-expr4       -> expr4 & expr5 .
-expr4       -> expr5 .
-expr5       -> SIZEOF ( expr0 ) .
-expr5       -> ID ( ) .
-expr5       -> ID ( args ) .
-expr5       -> ( expr0 ) .
-expr5       -> expr6 .
-expr6       -> ! expr6 .
-expr6       -> - expr6 .
-expr6       -> ~ expr6 .
-expr6       -> ++ expr6 .
-expr6       -> -- expr6 .
-expr6       -> expr6 ++ .
-expr6       -> expr6 -- .
-expr6       -> & lvalue .
-expr6       -> * expr6 .
-expr6       -> expr6 -> expr6 .
-expr6       -> expr6 . expr6 .
-expr6       -> ID .
-expr6       -> DEC .
-expr6       -> HEX .
-expr6       -> BIN .
-expr6       -> TRUE .
-expr6       -> FALSE .
-expr6       -> NULL .
-expr6       -> STRLIT .
-expr6       -> CHARLIT .
-expr6       -> NEW type [ expr0 ] .
-expr6       -> NEW type .
+star → .
+star → AT star
 
-args        -> expr0 , args .
-args        -> expr0 .
+expr1 → expr1 OR expr2
+expr1 → expr2
 
-lvalue      -> ID .
-lvalue      -> * expr6 .
-lvalue      -> ID [ expr0 ] .
-lvalue      -> ( lvalue ) .
+expr2 → expr2 AND expr3
+expr2 → expr3
+
+expr3 → expr3 BITOR expr4
+expr3 → expr4
+
+expr4 → expr4 BITXOR expr5
+expr4 → expr5
+
+expr5 → expr5 BITAND expr6
+expr5 → expr6
+
+expr6 → expr6 EQUALS expr7
+expr6 → expr6 NEQ expr7
+expr6 → expr7
+
+expr7 → expr7 LT expr8
+expr7 → expr7 LEQ expr8
+expr7 → expr7 GT expr8
+expr7 → expr7 GEQ expr8
+expr7 → expr8
+
+expr8 → expr8 LSHIFT expr9
+expr8 → expr8 RSHIFT expr9
+expr8 → expr9
+
+expr9 → expr9 PLUS expr10
+expr9 → expr9 SUB expr10
+expr9 → expr10
+
+expr10 → expr10 MULT expr11
+expr10 → expr10 DIV expr11
+expr10 → expr10 MOD expr11
+expr10 → expr11
+
+expr11 → AT expr11
+expr11 → ADDR expr11
+expr11 → NOT expr11
+expr11 → BITNOT expr11
+expr11 → INCR expr11
+expr11 → DECR expr11
+expr11 → SUB expr11
+expr11 → PLUS expr11
+expr11 → expr12
+
+expr12 → expr13 EXP expr12
+expr12 → expr13
+
+expr13 → expr13 INCR
+expr13 → expr13 DECR
+expr13 → expr13 ARROW ID
+expr13 → expr13 DOT ID
+expr13 → expr14
+
+expr14 → LPAREN expr1 RPAREN
+expr14 → ID
+expr14 → TRUE
+expr14 → FALSE
+expr14 → NIL
+expr14 → NUM
+expr14 → CHARLIT
+expr14 → READ LPAREN RPAREN

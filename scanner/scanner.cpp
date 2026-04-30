@@ -14,6 +14,8 @@ inline bool is_accepting_state(Scanner::ScannerDFAState state) {
 std::ostream& operator<<(std::ostream& os, Scanner::ScannerDFAState state) {
     switch (state) {
         case MAIN: os << "MAIN"; break;
+        case READ: os << "READ"; break;
+        case PRINT: os << "PRINT"; break;
         case INT: os << "INT"; break;
         case CHAR: os << "CHAR"; break;
         case BOOL: os << "BOOL"; break;
@@ -53,13 +55,16 @@ std::ostream& operator<<(std::ostream& os, Scanner::ScannerDFAState state) {
         case NEQ: os << "NEQ"; break;
         case PLUS: os << "PLUS"; break;
         case SUB: os << "SUB"; break;
-        case AST: os << "AST"; break;
+        case MULT: os << "MULT"; break;
+        case AT: os << "AT"; break;
+        case ADDR: os << "ADDR"; break;
         case DIV: os << "DIV"; break;
         case MOD: os << "MOD"; break;
         case LSHIFT: os << "LSHIFT"; break;
         case RSHIFT: os << "RSHIFT"; break;
         case EXP: os << "EXP"; break;
         case BITOR: os << "BITOR"; break;
+        case BITXOR: os << "BITXOR"; break;
         case BITAND: os << "BITAND"; break;
         case BITNOT: os << "BITNOT"; break;
         case INCR: os << "INCR"; break;
@@ -133,13 +138,18 @@ consteval Transitions buildTransitions() {
     t[START]['+'] = PLUS;
     t[PLUS]['+'] = INCR;
 
-    t[START]['*'] = AST;
+    t[START]['*'] = MULT;
+
+    t[START]['@'] = AT;
+
+    t[START]['$'] = ADDR;
 
     t[START]['/'] = DIV;
 
     t[START]['%'] = MOD;
 
-    t[START]['^'] = EXP;
+    t[START]['^'] = BITXOR;
+    t[BITXOR]['^'] = EXP;
 
     t[START]['.'] = DOT;
 
@@ -176,7 +186,7 @@ consteval Transitions buildTransitions() {
 constexpr Transitions transitions = buildTransitions();
 
 const std::unordered_map<std::string_view, ScannerDFAState> KEYWORDS = {
-    {"main", MAIN}, {"int", INT}, {"char", CHAR}, {"bool", BOOL}, {"struct", STRUCT},
+    {"main", MAIN}, {"read", READ}, {"print", PRINT}, {"int", INT}, {"char", CHAR}, {"bool", BOOL}, {"struct", STRUCT},
     {"true", TRUE}, {"false", FALSE}, {"NULL", NIL},
     {"return", RETURN}, {"if", IF}, {"elif", ELIF}, {"else", ELSE}, {"for", FOR}, {"while", WHILE}, {"break", BREAK},
     {"delete", DELETE}, {"new", NEW},

@@ -9,16 +9,17 @@ namespace Scanner {
         // NON-ACCEPTINGs
         START, APOS, APOSLASH, NOT_CHARLIT,
         // ACCEPTINGs
-        MAIN, INT, CHAR, BOOL, STRUCT,
+        MAIN, READ, PRINT, INT, CHAR, BOOL, STRUCT,
         TRUE, FALSE, NIL, NUM, CHARLIT, ID,
         RETURN, IF, ELIF, ELSE, FOR, WHILE, BREAK,
         DELETE, NEW,
         COLON, LPAREN, RPAREN, SEMI, LCURLY, RCURLY, COMMA, LBRACK, RBRACK, BECOMES,
         NOT, OR, AND, GEQ, GT, LEQ, LT, EQUALS, NEQ,
         // ! || && >= > > <= < == !=
-        PLUS, SUB, AST, DIV, MOD, LSHIFT, RSHIFT, EXP, BITOR, BITAND, BITNOT,
+        PLUS, SUB, MULT, DIV, MOD, LSHIFT, RSHIFT, EXP,
+        BITOR, BITXOR, BITAND, BITNOT,
         // + - * / % << >> ^ | & ~
-        INCR, DECR, ARROW, DOT,
+        AT, ADDR, INCR, DECR, ARROW, DOT,
         // ++ -- -> .
         ERROR, NUM_STATES,
     };
