@@ -222,7 +222,7 @@ void scan(std::istream& is, std::ostream& os, std::vector<Token>& stream, std::o
                 else if (state == NUM) catch_num_error(lexeme);
 
                 os << state  << " : " << lexeme << std::endl;
-                stream.push_back(Token{std::move(lexeme), state});
+                stream.push_back(Token{std::move(lexeme), static_cast<Parser::ParserSymbol>(state)});
 
                 lexeme.clear();
                 state = START;
@@ -246,6 +246,6 @@ void scan(std::istream& is, std::ostream& os, std::vector<Token>& stream, std::o
         else if (state == NUM) catch_num_error(lexeme);
 
         os << state  << " : " << lexeme << std::endl;
-        stream.push_back(Token{std::move(lexeme), state});
+        stream.push_back(Token{std::move(lexeme), static_cast<Parser::ParserSymbol>(state)});
     }
 }
