@@ -33,6 +33,7 @@ statement -> expr1 SEMI .
 statement -> NEW type LBRACK NUM RBRACK SEMI .
 statement -> DELETE expr1 SEMI .
 statement -> PRINT LPAREN args RPAREN SEMI .
+statement -> RETURN expr1 SEMI .
 
 ifs -> .
 ifs -> ELIF LPAREN expr1 RPAREN LCURLY statements RCURLY ifs .

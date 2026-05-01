@@ -1,0 +1,8 @@
+//
+// Created by kulaf on 5/1/2026.
+//
+
+#ifndef XERLANG_PARSER_CONSTANTS_H
+#define XERLANG_PARSER_CONSTANTS_H
+
+#endif // XERLANG_PARSER_CONSTANTS_H
