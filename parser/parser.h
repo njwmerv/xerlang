@@ -15,6 +15,8 @@ struct ParsingTableEntry {
     };
 };
 
-std::unique_ptr<ASTNode*> parse(std::vector<Token>& stream);
+std::unique_ptr<ASTNode> parse(std::vector<Token>& stream);
+
+void print_AST(const std::unique_ptr<ASTNode>& root, size_t depth, std::ostream& os);
 
 #endif //PARSER_H

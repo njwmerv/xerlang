@@ -5,12 +5,13 @@ productions: list[str] = ['start → BoF procedures EoF','procedures → dcl SEM
 
 productions_map: dict[str, int] = {productions[i] : i for i in range(len(productions))}
 
+# for prod in productions:
+#     print(f'{prod} : {productions_map[prod]}')
 
 with open('table.html', 'r', encoding='utf-8') as file:
     soup = bs4.BeautifulSoup(file, 'html.parser')
 
-headers = [th.text.strip() for th in soup.find('thead').find_all('th')]
-headers = headers[1:]
+headers = [th.text.strip() for th in soup.find('thead').find_all('th')][1:]
 num_cols = len(headers) - 1
 
 ordering: list[str] = ["MAIN","READ","PRINT","INT","CHAR","BOOL","STRUCT","TRUE","FALSE","NIL","NUM","CHARLIT","ID","RETURN","IF","ELIF","ELSE","FOR","WHILE","BREAK","DELETE","NEW","COLON","LPAREN","RPAREN","SEMI","LCURLY","RCURLY","COMMA","LBRACK","RBRACK","BECOMES","NOT","OR","AND","GEQ","GT","LEQ","LT","EQUALS","NEQ","PLUS","SUB","MULT","DIV","MOD","LSHIFT","RSHIFT","EXP","BITOR","BITXOR","BITAND","BITNOT","AT","ADDR","INCR","DECR","ARROW","DOT","BoF","EoF","start","procedures","procedure","main","type","star","params","dcls","dcl","statements","statement","ifs","forprologue","forepilogue","expr1","expr2","expr3","expr4","expr5","expr6","expr7","expr8","expr9","expr10","expr11","expr12","expr13","expr14","args","structdef","$",]
@@ -25,7 +26,7 @@ for col_name in ordering:
 def parse_cell(cell_text: str) -> str:
     text: str = cell_text.strip()
 
-    if not text: return '{}' # '{ParsingTableEntry::Action::NIL,{.target_state=0}}'
+    if not text: return 'n()' # '{ParsingTableEntry::Action::NIL,{.target_state=0}}'
 
     if text == 'accept': return 'a()'
 
@@ -44,7 +45,7 @@ def parse_cell(cell_text: str) -> str:
         return f'g({text})'
         # return f'{{ParsingTableEntry::Action::GOTO,{{.target_state={text}}}}}'
 
-    return '{}' # '{ParsingTableEntry::Action::NIL,{.target_state=0}}'
+    return 'n()' # '{ParsingTableEntry::Action::NIL,{.target_state=0}}'
 
 rows = soup.find('table').find_all('tr')[1:]
 cpp_output = ''

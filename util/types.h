@@ -47,7 +47,7 @@ namespace Parser {
         statements, statement, ifs, forprologue, forepilogue,
         expr1, expr2, expr3, expr4, expr5, expr6, expr7, expr8, expr9, expr10, expr11, expr12, expr13, expr14,
         args, structdef,
-        NUM_SYMBOLS,
+        DOLLAR, NUM_SYMBOLS,
     };
 }
 
@@ -61,9 +61,9 @@ typedef struct {
 typedef int Type;
 
 struct Production {
-    const Parser::ParserSymbol LHS;
-    const size_t len;
-    const std::array<Parser::ParserSymbol, MAX_RHS_LEN> RHS;
+    Parser::ParserSymbol LHS;
+    size_t len;
+    std::array<Parser::ParserSymbol, MAX_RHS_LEN> RHS;
 };
 
 struct ASTNode {
@@ -72,7 +72,7 @@ struct ASTNode {
     Type type;
     Parser::ParserSymbol node_type;
     std::string lexeme;
-    std::vector<std::unique_ptr<ASTNode*>> children;
+    std::vector<std::unique_ptr<ASTNode>> children;
 
     ~ASTNode() { parent = nullptr; }
 };

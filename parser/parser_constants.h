@@ -4,7 +4,9 @@
 #include "parser.h"
 
 #define NUM_STATES 226
-#define NUM_PRODUCTIONS 95
+#define NUM_PRODUCTIONS 96
+
+// Lookahead Table generated with help from: https://mdaines.github.io/grammophone/#/
 
 using namespace Parser;
 
@@ -43,7 +45,7 @@ consteval ParsingTableEntry n() {
     return pte;
 }
 
-inline constexpr std::array<std::array<ParsingTableEntry, ParserSymbol::NUM_SYMBOLS + 1>, NUM_STATES> PARSING_TABLE{{
+inline constexpr std::array<std::array<ParsingTableEntry, ParserSymbol::NUM_SYMBOLS>, NUM_STATES> PARSING_TABLE{{
     {n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),s(2),n(),g(1),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n()},
     {n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),a()},
     {s(11),n(),n(),s(12),s(13),s(14),s(9),n(),n(),n(),n(),n(),s(10),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),g(3),g(6),g(7),g(8),n(),n(),n(),g(4),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),g(5),n()},
@@ -272,8 +274,8 @@ inline constexpr std::array<std::array<ParsingTableEntry, ParserSymbol::NUM_SYMB
     {n(),r(30),r(30),r(30),r(30),r(30),r(30),r(30),r(30),r(30),r(30),r(30),r(30),r(30),r(30),n(),n(),r(30),r(30),r(30),r(30),r(30),n(),r(30),n(),n(),n(),r(30),n(),n(),n(),n(),r(30),n(),n(),n(),n(),n(),n(),n(),n(),r(30),r(30),n(),n(),n(),n(),n(),n(),n(),n(),n(),r(30),r(30),r(30),r(30),r(30),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n(),n()}
 }};
 
-inline constexpr std::array<Production, NUM_PRODUCTIONS> PRODUCTIONS{{
-    {ParserSymbol::start, 3, {ParserSymbol::BoF, ParserSymbol::procedures, ParserSymbol::EoF,}},
+inline constexpr std::array<const Production, NUM_PRODUCTIONS> PRODUCTIONS{{
+    {ParserSymbol::start, 3, {ParserSymbol::BoF,ParserSymbol::procedures,ParserSymbol::EoF,}},
     {ParserSymbol::procedures, 3, {ParserSymbol::dcl,ParserSymbol::SEMI,ParserSymbol::procedures,}},
     {ParserSymbol::procedures, 5, {ParserSymbol::dcl,ParserSymbol::BECOMES,ParserSymbol::expr1,ParserSymbol::SEMI,ParserSymbol::procedures,}},
     {ParserSymbol::procedures, 2, {ParserSymbol::structdef,ParserSymbol::procedures,}},
@@ -301,6 +303,7 @@ inline constexpr std::array<Production, NUM_PRODUCTIONS> PRODUCTIONS{{
     {ParserSymbol::statement, 6, {ParserSymbol::NEW,ParserSymbol::type,ParserSymbol::LBRACK,ParserSymbol::NUM,ParserSymbol::RBRACK,ParserSymbol::SEMI,}},
     {ParserSymbol::statement, 3, {ParserSymbol::DELETE,ParserSymbol::expr1,ParserSymbol::SEMI,}},
     {ParserSymbol::statement, 5, {ParserSymbol::PRINT,ParserSymbol::LPAREN,ParserSymbol::args,ParserSymbol::RPAREN,ParserSymbol::SEMI,}},
+    {ParserSymbol::statement, 3, {ParserSymbol::RETURN,ParserSymbol::expr1,ParserSymbol::SEMI,}},
     {ParserSymbol::ifs, 0, {}},
     {ParserSymbol::ifs, 8, {ParserSymbol::ELIF,ParserSymbol::LPAREN,ParserSymbol::expr1,ParserSymbol::RPAREN,ParserSymbol::LCURLY,ParserSymbol::statements,ParserSymbol::RCURLY,ParserSymbol::ifs,}},
     {ParserSymbol::ifs, 4, {ParserSymbol::ELSE,ParserSymbol::LCURLY,ParserSymbol::statements,ParserSymbol::RCURLY,}},

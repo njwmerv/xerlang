@@ -1,23 +1,23 @@
-is_capitalized : (c: char) -> bool {
+is_capitalized : (char c) -> bool {
     return c == 'A' || c == 'B' || c == 'C';
 }
 
-struct Data {
-    char a;
-    char b;
-    int c;
-}
+#struct Data {
+#    char a;
+#    char b;
+#    int c;
+#}
 # just want to annotate some code here...
 main : () -> int { # main
     char c = read(); # should read ONE char from stdin
 
     if (c == 'a') {
-        print(c); // should print 'a' to stdout
+        print(c);
     }
-    elif (is_capitalized(c)) {
-        int x = 5;
-        print(x); // should output '5' to stdout
-    }
+    #elif (is_capitalized(c)) {
+    #    int x = 5;
+    #    print(x);
+    #}
     else {
         for (int i = 0; i < 10; i++) {
             print(i);
@@ -30,15 +30,15 @@ main : () -> int { # main
         }
     }
 
-    struct Data@ arr = new struct Data [5];
+    #struct Data@ arr = new struct Data [5];
 
-    arr[0]->a = 'a';
-    arr[1]->a = 'b';
-    arr[4]->c = 100 * 5;
+    (arr + 0)->a = 'a';
+    (arr + 1)->a = 'b';
+    (arr + 4)->c = 100 * 5;
 
     char@ ptr = $c;
     
-    print(arr[0]->a);
+    print(arr->a);
 
     delete(arr);
 
