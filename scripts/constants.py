@@ -96,6 +96,7 @@ productions: list[str] = [
     'expr14 → CHARLIT',
     'expr14 → READ LPAREN RPAREN',
     'expr14 → ID LPAREN args RPAREN',
+    'expr14 → ID LPAREN RPAREN',
     'expr14 → NEW type LBRACK NUM RBRACK',
 ]
 
