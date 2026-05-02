@@ -54,5 +54,5 @@ for row in rows:
     cpp_output += ','.join(row_entries)
     cpp_output += '},\n'
 
-with open('parsing_table.hpp', 'w', encoding='utf-8') as f:
+with open('parsing_table_output', 'w', encoding='utf-8') as f:
     f.write(cpp_output)
