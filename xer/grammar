@@ -12,9 +12,12 @@ main -> MAIN COLON LPAREN RPAREN ARROW INT LCURLY statements RCURLY .
 structdef -> STRUCT ID LCURLY dcls RCURLY SEMI .
 
 params -> .
-params -> dcls .
-dcls -> dcl .
-dcls -> dcl COMMA dcls .
+params -> paramlist .
+
+paramlist -> dcl .
+paramlist -> dcl COMMA paramlist .
+
+dcls -> dcl SEMI .
 dcls -> dcl SEMI dcls .
 
 dcl -> type ID .
@@ -30,7 +33,6 @@ statement -> WHILE LPAREN expr1 RPAREN LCURLY statements RCURLY .
 statement -> FOR LPAREN forprologue SEMI expr1 SEMI forepilogue RPAREN LCURLY statements RCURLY .
 statement -> BREAK SEMI .
 statement -> expr1 SEMI .
-statement -> NEW type LBRACK NUM RBRACK SEMI .
 statement -> DELETE expr1 SEMI .
 statement -> PRINT LPAREN args RPAREN SEMI .
 statement -> RETURN expr1 SEMI .
@@ -121,3 +123,5 @@ expr14 -> NIL .
 expr14 -> NUM .
 expr14 -> CHARLIT .
 expr14 -> READ LPAREN RPAREN .
+expr14 -> ID LPAREN args RPAREN .
+expr14 -> NEW type LBRACK NUM RBRACK .

@@ -43,7 +43,7 @@ namespace Parser {
         BoF, EoF, start,
         procedures, procedure, main,
         type, star,
-        params, dcls, dcl,
+        params, paramlist, dcls, dcl,
         statements, statement, ifs, forprologue, forepilogue,
         expr1, expr2, expr3, expr4, expr5, expr6, expr7, expr8, expr9, expr10, expr11, expr12, expr13, expr14,
         args, structdef,

@@ -4,7 +4,7 @@
 #include "parser.h"
 
 #define NUM_STATES 226
-#define NUM_PRODUCTIONS 96
+#define NUM_PRODUCTIONS 98
 
 // Lookahead Table generated with help from: https://mdaines.github.io/grammophone/#/
 
@@ -285,9 +285,10 @@ inline constexpr std::array<const Production, NUM_PRODUCTIONS> PRODUCTIONS{{
     {ParserSymbol::main, 9, {ParserSymbol::MAIN,ParserSymbol::COLON,ParserSymbol::LPAREN,ParserSymbol::RPAREN,ParserSymbol::ARROW,ParserSymbol::INT,ParserSymbol::LCURLY,ParserSymbol::statements,ParserSymbol::RCURLY,}},
     {ParserSymbol::structdef, 6, {ParserSymbol::STRUCT,ParserSymbol::ID,ParserSymbol::LCURLY,ParserSymbol::dcls,ParserSymbol::RCURLY,ParserSymbol::SEMI,}},
     {ParserSymbol::params, 0, {}},
-    {ParserSymbol::params, 1, {ParserSymbol::dcls,}},
-    {ParserSymbol::dcls, 1, {ParserSymbol::dcl,}},
-    {ParserSymbol::dcls, 3, {ParserSymbol::dcl,ParserSymbol::COMMA,ParserSymbol::dcls,}},
+    {ParserSymbol::params, 1, {ParserSymbol::paramlist,}},
+    {ParserSymbol::paramlist, 1, {ParserSymbol::dcl,}},
+    {ParserSymbol::paramlist, 3, {ParserSymbol::dcl,ParserSymbol::COMMA,ParserSymbol::paramlist,}},
+    {ParserSymbol::dcls, 2, {ParserSymbol::dcl,ParserSymbol::SEMI,}},
     {ParserSymbol::dcls, 3, {ParserSymbol::dcl,ParserSymbol::SEMI,ParserSymbol::dcls,}},
     {ParserSymbol::dcl, 2, {ParserSymbol::type,ParserSymbol::ID,}},
     {ParserSymbol::statements, 2, {ParserSymbol::statements,ParserSymbol::statement,}},
@@ -300,7 +301,6 @@ inline constexpr std::array<const Production, NUM_PRODUCTIONS> PRODUCTIONS{{
     {ParserSymbol::statement, 11, {ParserSymbol::FOR,ParserSymbol::LPAREN,ParserSymbol::forprologue,ParserSymbol::SEMI,ParserSymbol::expr1,ParserSymbol::SEMI,ParserSymbol::forepilogue,ParserSymbol::RPAREN,ParserSymbol::LCURLY,ParserSymbol::statements,ParserSymbol::RCURLY,}},
     {ParserSymbol::statement, 2, {ParserSymbol::BREAK,ParserSymbol::SEMI,}},
     {ParserSymbol::statement, 2, {ParserSymbol::expr1,ParserSymbol::SEMI,}},
-    {ParserSymbol::statement, 6, {ParserSymbol::NEW,ParserSymbol::type,ParserSymbol::LBRACK,ParserSymbol::NUM,ParserSymbol::RBRACK,ParserSymbol::SEMI,}},
     {ParserSymbol::statement, 3, {ParserSymbol::DELETE,ParserSymbol::expr1,ParserSymbol::SEMI,}},
     {ParserSymbol::statement, 5, {ParserSymbol::PRINT,ParserSymbol::LPAREN,ParserSymbol::args,ParserSymbol::RPAREN,ParserSymbol::SEMI,}},
     {ParserSymbol::statement, 3, {ParserSymbol::RETURN,ParserSymbol::expr1,ParserSymbol::SEMI,}},
@@ -371,6 +371,8 @@ inline constexpr std::array<const Production, NUM_PRODUCTIONS> PRODUCTIONS{{
     {ParserSymbol::expr14, 1, {ParserSymbol::NUM,}},
     {ParserSymbol::expr14, 1, {ParserSymbol::CHARLIT,}},
     {ParserSymbol::expr14, 3, {ParserSymbol::READ,ParserSymbol::LPAREN,ParserSymbol::RPAREN,}},
+    {ParserSymbol::expr14, 4, {ParserSymbol::ID,ParserSymbol::LPAREN,ParserSymbol::args,ParserSymbol::RPAREN,}},
+    {ParserSymbol::expr14, 5, {ParserSymbol::NEW,ParserSymbol::type,ParserSymbol::LBRACK,ParserSymbol::NUM,ParserSymbol::RBRACK,}},
 }};
 
 #endif // PARSER_CONSTANTS_H
