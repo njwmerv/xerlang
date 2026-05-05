@@ -11,6 +11,7 @@ int main(int argc, char* argv[]) {
     std::ofstream ofs{"../xer/sample_program.tokens"}; // std::ofstream ofs{"/dev/null"};
     std::vector<Token> stream = {{{}, Parser::ParserSymbol::BoF}};
     scan(ifs, ofs, stream, std::cerr);
+    if (stream.back().type == Parser::ParserSymbol::DOLLAR) return 1;
     stream.push_back({{}, Parser::ParserSymbol::EoF});
     stream.push_back({{}, Parser::ParserSymbol::DOLLAR});
 

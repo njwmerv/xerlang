@@ -1,4 +1,5 @@
-is_capitalized : (char c) -> bool {
+int a;
+is_capitalized : (char c) -> bool { # 1234567890 123456789012345678901234567890
     return c == 'A' || c == 'B' || c == 'C';
 }
 

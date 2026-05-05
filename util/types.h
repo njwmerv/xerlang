@@ -56,6 +56,8 @@ std::ostream& operator<<(std::ostream& os, Parser::ParserSymbol state);
 typedef struct {
     std::string lexeme;
     Parser::ParserSymbol type;
+    size_t line_num;
+    size_t col_num;
 } Token;
 
 typedef int Type;
