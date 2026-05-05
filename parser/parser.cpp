@@ -104,74 +104,19 @@ std::ostream& operator<<(std::ostream& os, Parser::ParserSymbol state) {
     return os;
 }
 
-struct LALRData {
-    uint16_t state = 0;
-    std::unique_ptr<ASTNode> data = nullptr;
+// Constructing Concrete Syntax Tree (CST)
+
+struct CSTNode {
+    CSTNode* parent = nullptr;
+    Production production{};
+    Parser::ParserSymbol node_type{};
+    std::string lexeme;
+    std::vector<std::unique_ptr<CSTNode>> children;
+
+    ~CSTNode() { parent = nullptr; }
 };
 
-std::unique_ptr<ASTNode> create_leaf(const Token& token) {
-    std::unique_ptr<ASTNode> ptr = std::make_unique<ASTNode>();
-    ptr->node_type = token.type;
-    ptr->lexeme = token.lexeme;
-    return ptr;
-}
-
-std::unique_ptr<ASTNode> reduce_nodes(const Production& prod, std::vector<std::unique_ptr<ASTNode>>&& children) {
-    std::unique_ptr<ASTNode> ptr = std::make_unique<ASTNode>();
-    ptr->production = prod;
-    ptr->node_type = prod.LHS;
-    ptr->children = std::move(children);
-    for (auto& child : ptr->children) child->parent = ptr.get();
-    return ptr;
-}
-
-std::vector<LALRData> stack;
-
-std::unique_ptr<ASTNode> parse(std::vector<Token>& stream) {
-    if (!stack.empty()) stack.clear();
-    stack.push_back({0, nullptr});
-    size_t token_idx = 0;
-
-    while (token_idx < stream.size()) {
-        const Token& lookahead = stream.at(token_idx);
-        uint16_t current_state = stack.back().state;
-
-        const ParsingTableEntry& pte = PARSING_TABLE[current_state][lookahead.type];
-
-        switch (pte.act) {
-            case ParsingTableEntry::Action::SHIFT:
-                stack.push_back({pte.target_state, create_leaf(lookahead)});
-                token_idx++;
-                break;
-            case ParsingTableEntry::Action::REDUCE: {
-                const Production& prod = PRODUCTIONS[pte.production_id];
-                std::vector<std::unique_ptr<ASTNode>> children;
-
-                int i;
-                for(i = 0; i < prod.len; i++)
-                    children.push_back(std::move(stack.at(stack.size() - prod.len + i).data));
-                for(i = 0; i < prod.len; i++)
-                    stack.pop_back();
-
-                if(stack.empty()) throw std::runtime_error{"ERROR: Attempting to read empty stack!"};
-                uint16_t state_after_pop = stack.back().state;
-
-                const ParsingTableEntry& goto_pte = PARSING_TABLE[state_after_pop][prod.LHS];
-                if(goto_pte.act != ParsingTableEntry::Action::GOTO) throw std::runtime_error{"ERROR: NOT GOTO entry found!"};
-
-                stack.push_back({goto_pte.target_state, reduce_nodes(prod, std::move(children))});
-                break;
-            }
-            case ParsingTableEntry::Action::ACCEPT:
-                return std::move(stack.back().data);
-            default:
-                throw std::runtime_error{"ERROR: Default - NO valid parse possible."};
-        }
-    }
-    throw std::runtime_error{"ERROR: Out - NO valid parse possible."};
-}
-
-void print_AST(const std::unique_ptr<ASTNode>& root, const size_t depth = 0, std::ostream& os = std::cout) {
+void print_CST(const std::unique_ptr<CSTNode>& root, const size_t depth = 0, std::ostream& os = std::cout) {
     if (!root) return;
 
     if (depth > 0) {
@@ -182,5 +127,93 @@ void print_AST(const std::unique_ptr<ASTNode>& root, const size_t depth = 0, std
 
     if (root->node_type == ParserSymbol::ID || root->node_type == ParserSymbol::NUM || root->node_type == ParserSymbol::CHARLIT) os << " : " << root->lexeme;
     os << '\n';
-    for (const auto& child : root->children) print_AST(child, depth + 2, os);
+    for (const auto& child : root->children) print_CST(child, depth + 2, os);
+}
+
+struct LALRData {
+    uint16_t state = 0;
+    std::unique_ptr<CSTNode> data = nullptr;
+};
+
+std::unique_ptr<CSTNode> create_leaf(const Token& token) {
+    std::unique_ptr<CSTNode> ptr = std::make_unique<CSTNode>();
+    ptr->node_type = token.type;
+    ptr->lexeme = token.lexeme;
+    return ptr;
+}
+
+std::unique_ptr<CSTNode> reduce_nodes(const Production& prod, std::vector<std::unique_ptr<CSTNode>>&& children) {
+    std::unique_ptr<CSTNode> ptr = std::make_unique<CSTNode>();
+    ptr->production = prod;
+    ptr->node_type = prod.LHS;
+    ptr->children = std::move(children);
+    for (auto& child : ptr->children) child->parent = ptr.get();
+    return ptr;
+}
+
+std::vector<LALRData> stack;
+
+std::unique_ptr<CSTNode> construct_CST(const std::vector<Token>& stream, std::ostream& err) {
+    if (!stack.empty()) stack.clear();
+    stack.push_back({0, nullptr});
+    size_t token_idx = 0;
+
+    try {
+        while (token_idx < stream.size()) {
+            const Token& lookahead = stream.at(token_idx);
+            uint16_t current_state = stack.back().state;
+
+            const ParsingTableEntry& pte = PARSING_TABLE[current_state][lookahead.type];
+
+            switch (pte.act) {
+                case ParsingTableEntry::Action::SHIFT:
+                    stack.push_back({pte.target_state, create_leaf(lookahead)});
+                    token_idx++;
+                    break;
+                case ParsingTableEntry::Action::REDUCE: {
+                    const Production& prod = PRODUCTIONS[pte.production_id];
+                    std::vector<std::unique_ptr<CSTNode>> children;
+
+                    int i;
+                    for(i = 0; i < prod.len; i++)
+                        children.push_back(std::move(stack.at(stack.size() - prod.len + i).data));
+                    for(i = 0; i < prod.len; i++)
+                        stack.pop_back();
+
+                    if(stack.empty()) throw std::runtime_error{"ERROR: Attempting to read empty stack!"};
+                    // theoretically, this ^^^ cannot occur, assuming correctness of parser implementation
+                    uint16_t state_after_pop = stack.back().state;
+
+                    const ParsingTableEntry& goto_pte = PARSING_TABLE[state_after_pop][prod.LHS];
+                    if(goto_pte.act != ParsingTableEntry::Action::GOTO) throw std::runtime_error{"ERROR: NOT GOTO entry found!"};
+                    // theoretically, this ^^^ cannot occur, assuming correctness of parser implementation
+
+                    stack.push_back({goto_pte.target_state, reduce_nodes(prod, std::move(children))});
+                    break;
+                }
+                case ParsingTableEntry::Action::ACCEPT:
+                    return std::move(stack.back().data);
+                default:
+                    throw std::runtime_error{"ERROR: Default - NO valid parse possible."};
+            }
+        }
+    } catch (std::exception& e) {
+        const Token& lookahead = stream.at(token_idx);
+        err << "Parser Error in Line " << lookahead.line_num << " : Column " << lookahead.col_num << '\n';
+        err << "Detected a Token w/ type: " << lookahead.type << " -> " << lookahead.lexeme << std::endl;
+    }
+    throw std::runtime_error{"ERROR: Out - NO valid parse possible."};
+    // theoretically, this ^^^ cannot occur, assuming correctness of LEXER implementation
+}
+
+// Construct Abstract Syntax Tree (AST)
+
+
+
+// Combined Steps
+
+std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& err = std::cerr) {
+    std::unique_ptr<CSTNode> CST_root = construct_CST(stream, err);
+    print_CST(CST_root);
+    return nullptr;
 }

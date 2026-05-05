@@ -4,10 +4,12 @@ project(Xerlang VERSION 0.1.0 LANGUAGES CXX)
 add_library(XerlangCore
   # SOURCEs
   parser/parser.cpp
+  parser/ast.cpp
   scanner/scanner.cpp
   # HEADERs
   parser/parser.h
   parser/parser_constants.h
+  parser/ast.h
   scanner/scanner.h
   util/types.h
 )

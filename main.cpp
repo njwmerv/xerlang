@@ -16,12 +16,5 @@ int main(int argc, char* argv[]) {
     stream.push_back({{}, Parser::ParserSymbol::DOLLAR});
 
     // Parser
-    std::unique_ptr<ASTNode> root;
-    try {
-        root = parse(stream);
-        print_AST(root, 0, std::cout);
-    }
-    catch (std::exception& e) {
-        std::cerr << e.what();
-    }
+    std::unique_ptr<ASTNode> root = parse(stream, std::cerr);
 }

@@ -1,14 +1,22 @@
 #ifndef PARSER_CONSTANTS_H
 #define PARSER_CONSTANTS_H
 
-#include "parser.h"
-
 #define NUM_STATES 235
 #define NUM_PRODUCTIONS 101
 
 // Lookahead Table generated with help from: https://mdaines.github.io/grammophone/#/
 
 using namespace Parser;
+
+struct ParsingTableEntry {
+    enum class Action : uint8_t { NIL, SHIFT, REDUCE, GOTO, ACCEPT };
+
+    Action act = Action::NIL;
+    union {
+        uint16_t target_state = 0;
+        uint16_t production_id;
+    };
+};
 
 consteval ParsingTableEntry s(uint16_t n) {
     ParsingTableEntry pte;

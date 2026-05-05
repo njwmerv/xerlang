@@ -1,8 +1,6 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-#include <memory>
-
 #define MAX_RHS_LEN 11
 
 namespace Scanner {
@@ -60,23 +58,12 @@ typedef struct {
     size_t col_num;
 } Token;
 
-typedef int Type;
-
 struct Production {
     Parser::ParserSymbol LHS;
     size_t len;
     std::array<Parser::ParserSymbol, MAX_RHS_LEN> RHS;
 };
 
-struct ASTNode {
-    ASTNode* parent;
-    Production production;
-    Type type;
-    Parser::ParserSymbol node_type;
-    std::string lexeme;
-    std::vector<std::unique_ptr<ASTNode>> children;
-
-    ~ASTNode() { parent = nullptr; }
-};
+struct ASTNode {};
 
 #endif //TYPES_H
