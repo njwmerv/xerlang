@@ -8,6 +8,11 @@ int AB = -1;
 
 guhh : () -> bool {}
 
+incr : () -> void {
+    @x = @x + 1;
+    return;
+}
+
 struct Data {
     char a;
     char b;

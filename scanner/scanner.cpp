@@ -19,6 +19,7 @@ std::ostream& operator<<(std::ostream& os, Scanner::ScannerDFAState state) {
         case INT: os << "INT"; break;
         case CHAR: os << "CHAR"; break;
         case BOOL: os << "BOOL"; break;
+        case VOID: os << "VOID"; break;
         case TRUE: os << "TRUE"; break;
         case FALSE: os << "FALSE"; break;
         case NIL: os << "NIL"; break;
@@ -186,7 +187,7 @@ consteval Transitions buildTransitions() {
 constexpr Transitions transitions = buildTransitions();
 
 const std::unordered_map<std::string_view, ScannerDFAState> KEYWORDS = {
-    {"main", MAIN}, {"read", READ}, {"print", PRINT}, {"int", INT}, {"char", CHAR}, {"bool", BOOL}, {"struct", STRUCT},
+    {"main", MAIN}, {"read", READ}, {"print", PRINT}, {"int", INT}, {"char", CHAR}, {"bool", BOOL}, {"struct", STRUCT}, {"void", VOID},
     {"true", TRUE}, {"false", FALSE}, {"NULL", NIL},
     {"return", RETURN}, {"if", IF}, {"elif", ELIF}, {"else", ELSE}, {"for", FOR}, {"while", WHILE}, {"break", BREAK},
     {"delete", DELETE}, {"new", NEW},

@@ -178,6 +178,9 @@ void print_AST(const std::unique_ptr<ASTNode>& root, const size_t depth = 0, std
         for(int i = 1; i < depth; i++) os << ' ';
         os << "↪";
     }
-    os << root->node_type << '\n';
+    os << root->node_type;
+
+    if (root->node_type == ParserSymbol::ID || root->node_type == ParserSymbol::NUM || root->node_type == ParserSymbol::CHARLIT) os << " : " << root->lexeme;
+    os << '\n';
     for (const auto& child : root->children) print_AST(child, depth + 2, os);
 }

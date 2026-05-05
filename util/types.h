@@ -8,7 +8,7 @@
 namespace Scanner {
     enum ScannerDFAState {
         // ACCEPTINGs
-        MAIN, READ, PRINT, INT, CHAR, BOOL, STRUCT,
+        MAIN, READ, PRINT, INT, CHAR, BOOL, STRUCT, VOID,
         TRUE, FALSE, NIL, NUM, CHARLIT, ID,
         RETURN, IF, ELIF, ELSE, FOR, WHILE, BREAK,
         DELETE, NEW,
@@ -29,7 +29,7 @@ std::ostream& operator<<(std::ostream& os, Scanner::ScannerDFAState state);
 namespace Parser {
     enum ParserSymbol {
         // TERMINATING
-        MAIN, READ, PRINT, INT, CHAR, BOOL, STRUCT,
+        MAIN, READ, PRINT, INT, CHAR, BOOL, STRUCT, VOID,
         TRUE, FALSE, NIL, NUM, CHARLIT, ID,
         RETURN, IF, ELIF, ELSE, FOR, WHILE, BREAK,
         DELETE, NEW,

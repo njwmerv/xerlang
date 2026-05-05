@@ -7,6 +7,7 @@ procedures -> procedure procedures .
 procedures -> main .
 
 procedure -> ID COLON LPAREN params RPAREN ARROW type LCURLY statements RCURLY .
+procedure -> ID COLON LPAREN params RPAREN ARROW VOID LCURLY statements RCURLY .
 main -> MAIN COLON LPAREN RPAREN ARROW INT LCURLY statements RCURLY .
 
 structdef -> STRUCT ID LCURLY dcls RCURLY SEMI .
@@ -36,6 +37,7 @@ statement -> expr1 SEMI .
 statement -> DELETE expr1 SEMI .
 statement -> PRINT LPAREN args RPAREN SEMI .
 statement -> RETURN expr1 SEMI .
+statement -> RETURN SEMI .
 
 ifs -> .
 ifs -> ELIF LPAREN expr1 RPAREN LCURLY statements RCURLY ifs .
