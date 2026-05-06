@@ -111,6 +111,8 @@ struct CSTNode {
     Production production{};
     Parser::ParserSymbol node_type{};
     std::string lexeme;
+    size_t line_num = 0;
+    size_t col_num = 0;
     std::vector<std::unique_ptr<CSTNode>> children;
 
     ~CSTNode() { parent = nullptr; }
@@ -126,6 +128,7 @@ void print_CST(const std::unique_ptr<CSTNode>& root, const size_t depth = 0, std
     os << root->node_type;
 
     if (root->node_type == ParserSymbol::ID || root->node_type == ParserSymbol::NUM || root->node_type == ParserSymbol::CHARLIT) os << " : " << root->lexeme;
+    if (root->line_num > 0 && root->col_num > 0) os << " @ Line " << root->line_num << " : Column " << root->col_num;
     os << '\n';
     for (const auto& child : root->children) print_CST(child, depth + 2, os);
 }
@@ -139,6 +142,8 @@ std::unique_ptr<CSTNode> create_leaf(const Token& token) {
     std::unique_ptr<CSTNode> ptr = std::make_unique<CSTNode>();
     ptr->node_type = token.type;
     ptr->lexeme = token.lexeme;
+    ptr->line_num = token.line_num;
+    ptr->col_num = token.col_num;
     return ptr;
 }
 

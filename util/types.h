@@ -1,6 +1,10 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include <ostream>
+#include <cstddef>
+#include <array>
+
 #define MAX_RHS_LEN 11
 
 namespace Scanner {
