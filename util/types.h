@@ -1,8 +1,9 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-#include <ostream>
 #include <cstddef>
+#include <ostream>
+#include <vector>
 #include <array>
 
 #define MAX_RHS_LEN 11
@@ -68,6 +69,16 @@ struct Production {
     std::array<Parser::ParserSymbol, MAX_RHS_LEN> RHS;
 };
 
-struct ASTNode {};
+struct ASTNode {
+    ASTNode* parent = nullptr;
+    static const Parser::ParserSymbol node_type;
+    virtual ~ASTNode() = default;
+};
+
+// Analysis/Code Generation
+
+struct SymbolTableEntry {
+
+};
 
 #endif //TYPES_H
