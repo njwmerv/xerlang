@@ -69,6 +69,43 @@ struct Production {
     std::array<Parser::ParserSymbol, MAX_RHS_LEN> RHS;
 };
 
+struct Visitor; // Forward declaration
+
+struct ArgsNode;
+struct DeclarationsNode;
+struct TypeNode;
+struct StarNode;
+struct ForPrologueNode;
+struct ProgramNode;
+struct StructDefNode;
+struct ProcedureNode;
+    struct MainNode;
+struct BlockNode;
+struct StatementNode;
+    struct DeclarationNode;
+    struct VarInitNode;
+    struct IfNode;
+    struct DeleteNode;
+    struct PrintNode;
+    struct ReturnNode;
+    struct WhileNode;
+    struct AssignmentNode;
+    struct ForNode;
+    struct BreakNode;
+    struct ExprNode;
+        struct NumNode;
+        struct CharNode;
+        struct TrueNode;
+        struct FalseNode;
+        struct IDNode;
+        struct NilNode;
+        struct BinaryExprNode;
+        struct MemberAccessExprNode;
+        struct UnaryExprNode;
+        struct AllocNode;
+        struct FunctionCallNode;
+            struct ReadCallNode;
+
 struct ASTNode {
     ASTNode* parent = nullptr;
     const Parser::ParserSymbol node_type;
@@ -77,9 +114,45 @@ struct ASTNode {
     ASTNode(Parser::ParserSymbol type) : parent{nullptr}, node_type{type} {}
 
     virtual ~ASTNode() = default;
+
+    virtual void accept(struct Visitor& v) = 0;
 };
 
 // Analysis/Code Generation
+
+struct Visitor {
+    virtual ~Visitor() = default;
+    virtual void visit(struct ArgsNode&) = 0;
+    virtual void visit(struct DeclarationsNode&) = 0;
+    virtual void visit(struct ForPrologueNode&) = 0;
+    virtual void visit(struct ProgramNode&) = 0;
+    virtual void visit(struct StructDefNode&) = 0;
+    virtual void visit(struct ProcedureNode&) = 0;
+    virtual void visit(struct MainNode&) = 0;
+    virtual void visit(struct BlockNode&) = 0;
+    virtual void visit(struct DeclarationNode&) = 0;
+    virtual void visit(struct VarInitNode&) = 0;
+    virtual void visit(struct IfNode&) = 0;
+    virtual void visit(struct DeleteNode&) = 0;
+    virtual void visit(struct PrintNode&) = 0;
+    virtual void visit(struct ReturnNode&) = 0;
+    virtual void visit(struct WhileNode&) = 0;
+    virtual void visit(struct AssignmentNode&) = 0;
+    virtual void visit(struct ForNode&) = 0;
+    virtual void visit(struct BreakNode&) = 0;
+    virtual void visit(struct NumNode&) = 0;
+    virtual void visit(struct CharNode&) = 0;
+    virtual void visit(struct TrueNode&) = 0;
+    virtual void visit(struct FalseNode&) = 0;
+    virtual void visit(struct IDNode&) = 0;
+    virtual void visit(struct NilNode&) = 0;
+    virtual void visit(struct BinaryExprNode&) = 0;
+    virtual void visit(struct MemberAccessExprNode&) = 0;
+    virtual void visit(struct UnaryExprNode&) = 0;
+    virtual void visit(struct AllocNode&) = 0;
+    virtual void visit(struct FunctionCallNode&) = 0;
+    virtual void visit(struct ReadCallNode&) = 0;
+};
 
 struct SymbolTableEntry {
 

@@ -5,6 +5,8 @@
 #include "scanner/scanner.h"
 #include "util/types.h"
 
+#include "visitors/printer.h"
+
 int main(int argc, char* argv[]) {
     // Scanner
     std::ifstream ifs{"../xer/sample_program.xer"};
@@ -17,4 +19,8 @@ int main(int argc, char* argv[]) {
 
     // Parser
     std::unique_ptr<ASTNode> root = parse(stream, std::cerr);
+
+    // Semantic Analysis
+    Printer printer;
+    root->accept(printer);
 }

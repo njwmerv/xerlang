@@ -173,84 +173,103 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                             break;
                         }
                         case procedures_dclSEMIprocedures: {
-                            std::unique_ptr<ProgramNode> program = unique_ptr_cast<ProgramNode>(RHS.back());
-                            program->global_vars.insert(program->global_vars.begin(), std::make_unique<VarInitNode>(unique_ptr_cast<DeclarationNode>(RHS.front())));
+                            auto program = unique_ptr_cast<ProgramNode>(RHS.back());
+                            auto var_init = std::make_unique<VarInitNode>(unique_ptr_cast<DeclarationNode>(RHS.front()));
+                            program->global_vars.insert(program->global_vars.begin(), std::move(var_init));
+                            program->global_vars.front()->parent = program.get();
+                            program->global_vars.front()->dcl->parent = program->global_vars.front().get();
                             new_node = std::move(program);
                             break;
                         }
                         case procedures_dclBECOMESexpr1SEMIprocedures: {
-                            std::unique_ptr<ProgramNode> program = unique_ptr_cast<ProgramNode>(RHS.back());
-                            std::unique_ptr<VarInitNode> init = std::make_unique<VarInitNode>(unique_ptr_cast<DeclarationNode>(RHS.front()), unique_ptr_cast<ExprNode>(RHS.at(2)));
+                            auto program = unique_ptr_cast<ProgramNode>(RHS.back());
+                            auto init = std::make_unique<VarInitNode>(unique_ptr_cast<DeclarationNode>(RHS.front()), unique_ptr_cast<ExprNode>(RHS.at(2)));
+                            init->dcl->parent = init.get();
+                            init->val->parent = init.get();
+                            init->parent = program.get();
                             program->global_vars.insert(program->global_vars.begin(), std::move(init));
                             new_node = std::move(program);
                             break;
                         }
                         case procedures_structdefprocedures: {
-                            std::unique_ptr<ProgramNode> program = unique_ptr_cast<ProgramNode>(RHS.back());
-                            program->struct_defs.insert(program->struct_defs.begin(), unique_ptr_cast<StructDefNode>(RHS.front()));
+                            auto sd = unique_ptr_cast<StructDefNode>(RHS.front());
+                            auto program = unique_ptr_cast<ProgramNode>(RHS.back());
+                            program->struct_defs.insert(program->struct_defs.begin(), std::move(sd));
+                            program->struct_defs.front()->parent = program.get();
                             new_node = std::move(program);
                             break;
                         }
                         case structdef_STRUCTIDLCURLYdclsRCURLYSEMI: {
-                            new_node = std::make_unique<StructDefNode>(RHS.at(1).token.lexeme, unique_ptr_cast<DeclarationsNode>(RHS.at(3)));
+                            auto dcls = unique_ptr_cast<DeclarationsNode>(RHS.at(3));
+                            auto sd = std::make_unique<StructDefNode>(RHS.at(1).token.lexeme, std::move(dcls));
+                            sd->fields->parent = sd.get();
+                            new_node = std::move(sd);
                             break;
                         }
                         case procedures_procedureprocedures: {
-                            std::unique_ptr<ProgramNode> program = unique_ptr_cast<ProgramNode>(RHS.back());
+                            auto program = unique_ptr_cast<ProgramNode>(RHS.back());
                             program->procedures.insert(program->procedures.begin(), unique_ptr_cast<ProcedureNode>(RHS.at(0)));
+                            program->procedures.front()->parent = program.get();
                             new_node = std::move(program);
                             break;
                         }
                         case procedure_IDCOLONLPARENparamsRPARENARROWtypeLCURLYstatementsRCURLY:
                         case procedure_IDCOLONLPARENparamsRPARENARROWVOIDLCURLYstatementsRCURLY: {
                             const std::string id = RHS.at(0).token.lexeme;
-                            std::unique_ptr<DeclarationsNode> params = unique_ptr_cast<DeclarationsNode>(RHS.at(3));
-                            std::unique_ptr<BlockNode> block = unique_ptr_cast<BlockNode>(RHS.at(8));
+                            auto params = unique_ptr_cast<DeclarationsNode>(RHS.at(3));
+                            auto block = unique_ptr_cast<BlockNode>(RHS.at(8));
+                            std::unique_ptr<ProcedureNode> proc;
                             if (pte.production_id == procedure_IDCOLONLPARENparamsRPARENARROWVOIDLCURLYstatementsRCURLY) {
-                                new_node = std::make_unique<ProcedureNode>(id, "void", std::move(params), std::move(block));
+                                proc = std::make_unique<ProcedureNode>(id, "void", std::move(params), std::move(block));
                             }
                             else {
-                                std::unique_ptr<TypeNode> type = unique_ptr_cast<TypeNode>(RHS.at(6));
-                                new_node = std::make_unique<ProcedureNode>(id, type->lexeme, std::move(params), std::move(block));
+                                auto type = unique_ptr_cast<TypeNode>(RHS.at(6));
+                                proc = std::make_unique<ProcedureNode>(id, type->lexeme, std::move(params), std::move(block));
                             }
+                            proc->params->parent = proc.get();
+                            proc->block->parent = proc.get();
+                            new_node = std::move(proc);
                             break;
                         }
                         case procedures_main: {
-                            std::unique_ptr<ProgramNode> program = std::make_unique<ProgramNode>();
+                            auto program = std::make_unique<ProgramNode>();
                             program->main = unique_ptr_cast<MainNode>(RHS.front());
+                            program->main->parent = program.get();
                             new_node = std::move(program);
                             break;
                         }
                         case main_MAINCOLONLPARENRPARENARROWINTLCURLYstatementsRCURLY: {
-                            new_node = std::make_unique<MainNode>(unique_ptr_cast<BlockNode>(RHS.at(7)));
+                            auto main = std::make_unique<MainNode>(unique_ptr_cast<BlockNode>(RHS.at(7)));
+                            main->block->parent = main.get();
+                            new_node = std::move(main);
                             break;
                         }
                         case statements_statementsstatement: {
-                            // RHS[0] == Array, RHS[1] == next statement
-                            std::unique_ptr<BlockNode> block = unique_ptr_cast<BlockNode>(RHS.front());
+                            auto block = unique_ptr_cast<BlockNode>(RHS.front());
                             block->statements.push_back(unique_ptr_cast<StatementNode>(RHS.back()));
+                            block->statements.back()->parent = block.get();
                             new_node = std::move(block);
                             break;
                         }
                         case args_expr1COMMAargs: {
-                            // RHS[0] == arg, RHS[2] == arg_list
-                            std::unique_ptr<ArgsNode> arg_list = unique_ptr_cast<ArgsNode>(RHS.back());
+                            auto arg_list = unique_ptr_cast<ArgsNode>(RHS.back());
                             arg_list->args.insert(arg_list->args.begin(), unique_ptr_cast<ExprNode>(RHS.front()));
+                            arg_list->args.front()->parent = arg_list.get();
                             new_node = std::move(arg_list);
                             break;
                         }
                         case args_expr1: {
-                            // end of arg_list
-                            std::unique_ptr<ArgsNode> arg_list = std::make_unique<ArgsNode>();
+                            auto arg_list = std::make_unique<ArgsNode>();
                             arg_list->args.push_back(unique_ptr_cast<ExprNode>(RHS.front()));
+                            arg_list->args.back()->parent = arg_list.get();
                             new_node = std::move(arg_list);
                             break;
                         }
                         case paramlist_dclCOMMAparamlist:
                         case dcls_dclSEMIdcls: {
-                            // RHS[0] == dcl, RHS[2] == dcl_list
-                            std::unique_ptr<DeclarationsNode> dcl_list = unique_ptr_cast<DeclarationsNode>(RHS.back());
+                            auto dcl_list = unique_ptr_cast<DeclarationsNode>(RHS.back());
                             dcl_list->declarations.insert(dcl_list->declarations.begin(), unique_ptr_cast<DeclarationNode>(RHS.front()));
+                            dcl_list->declarations.front()->parent = dcl_list.get();
                             new_node = std::move(dcl_list);
                             break;
                         }
@@ -262,13 +281,13 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                         case type_CHARstar:
                         case type_BOOLstar:
                         case type_STRUCTIDstar: {
-                            std::unique_ptr<StarNode> stars = unique_ptr_cast<StarNode>(RHS.back());
+                            auto stars = unique_ptr_cast<StarNode>(RHS.back());
                             const std::string type = RHS.at(RHS.size() - 2).token.lexeme + std::string(stars->count, '*');
                             new_node = std::make_unique<TypeNode>(type);
                             break;
                         }
                         case star_ATstar: {
-                            std::unique_ptr<StarNode> stars = unique_ptr_cast<StarNode>(RHS.back());
+                            auto stars = unique_ptr_cast<StarNode>(RHS.back());
                             stars->count++;
                             new_node = std::move(stars);
                             break;
@@ -279,15 +298,17 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                         }
                         case paramlist_dcl:
                         case dcls_dclSEMI: {
-                            // end of dcl_list
-                            std::unique_ptr<DeclarationsNode> dcl_list = std::make_unique<DeclarationsNode>();
+                            auto dcl_list = std::make_unique<DeclarationsNode>();
                             dcl_list->declarations.push_back(unique_ptr_cast<DeclarationNode>(RHS.front()));
+                            dcl_list->declarations.back()->parent = dcl_list.get();
                             new_node = std::move(dcl_list);
                             break;
                         }
-                        // Control Flow
                         case statement_dclBECOMESexpr1SEMI: {
-                            new_node = std::make_unique<VarInitNode>(unique_ptr_cast<DeclarationNode>(RHS.front()), unique_ptr_cast<ExprNode>(RHS.at(2)));
+                            auto var_init = std::make_unique<VarInitNode>(unique_ptr_cast<DeclarationNode>(RHS.front()), unique_ptr_cast<ExprNode>(RHS.at(2)));
+                            var_init->dcl->parent = var_init.get();
+                            var_init->val->parent = var_init.get();
+                            new_node = std::move(var_init);
                             break;
                         }
                         case statement_dclSEMI: {
@@ -295,13 +316,18 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                             break;
                         }
                         case statement_expr1BECOMESexpr1SEMI: {
-                            new_node = std::make_unique<AssignmentNode>(unique_ptr_cast<ExprNode>(RHS.front()), unique_ptr_cast<ExprNode>(RHS.at(2)));
+                            auto asst = std::make_unique<AssignmentNode>(unique_ptr_cast<ExprNode>(RHS.front()), unique_ptr_cast<ExprNode>(RHS.at(2)));
+                            asst->LHS->parent = asst.get();
+                            asst->RHS->parent = asst.get();
+                            new_node = std::move(asst);
                             break;
                         }
                         case statement_IFLPARENexpr1RPARENLCURLYstatementsRCURLYifs:
                         case ifs_ELIFLPARENexpr1RPARENLCURLYstatementsRCURLYifs: {
-                            std::unique_ptr<IfNode> ifn = unique_ptr_cast<IfNode>(RHS.back());
+                            auto ifn = unique_ptr_cast<IfNode>(RHS.back());
                             ifn->clauses.insert(ifn->clauses.begin(), {unique_ptr_cast<ExprNode>(RHS.at(2)), unique_ptr_cast<BlockNode>(RHS.at(5))});
+                            ifn->clauses.front().cond->parent = ifn.get();
+                            ifn->clauses.front().block->parent = ifn.get();
                             new_node = std::move(ifn);
                             break;
                         }
@@ -310,35 +336,52 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                             break;
                         }
                         case ifs_ELSELCURLYstatementsRCURLY: {
-                            std::unique_ptr<IfNode> ifn = std::make_unique<IfNode>();
+                            auto ifn = std::make_unique<IfNode>();
                             ifn->clauses.push_back({nullptr, unique_ptr_cast<BlockNode>(RHS.at(2))});
+                            ifn->clauses.back().block->parent = ifn.get();
                             new_node = std::move(ifn);
                             break;
                         }
                         case statement_FORLPARENforprologueSEMIexpr1SEMIforepilogueRPARENLCURLYstatementsRCURLY: {
-                            std::unique_ptr<ForPrologueNode> pro = unique_ptr_cast<ForPrologueNode>(RHS.at(2));
-                            std::unique_ptr<ExprNode> cond = unique_ptr_cast<ExprNode>(RHS.at(4));
-                            std::unique_ptr<StatementNode> epi = unique_ptr_cast<StatementNode>(RHS.at(6));
-                            std::unique_ptr<BlockNode> block = unique_ptr_cast<BlockNode>(RHS.at(9));
-                            new_node = std::make_unique<ForNode>(std::move(pro), std::move(cond), std::move(epi), std::move(block));
+                            auto pro = unique_ptr_cast<ForPrologueNode>(RHS.at(2));
+                            auto cond = unique_ptr_cast<ExprNode>(RHS.at(4));
+                            auto epi = unique_ptr_cast<StatementNode>(RHS.at(6));
+                            auto block = unique_ptr_cast<BlockNode>(RHS.at(9));
+                            auto fn = std::make_unique<ForNode>(std::move(pro), std::move(cond), std::move(epi), std::move(block));
+                            fn->prologue->parent = fn.get();
+                            fn->cond->parent = fn.get();
+                            fn->epilogue->parent = fn.get();
+                            fn->block->parent = fn.get();
+                            new_node = std::move(fn);
                             break;
                         }
                         case forprologue_dclBECOMESexpr1: {
-                            std::unique_ptr<DeclarationNode> dcl = unique_ptr_cast<DeclarationNode>(RHS.front());
-                            std::unique_ptr<ExprNode> expr = unique_ptr_cast<ExprNode>(RHS.back());
-                            new_node = std::make_unique<ForPrologueNode>(std::make_unique<VarInitNode>(std::move(dcl), std::move(expr)));
+                            auto dcl = unique_ptr_cast<DeclarationNode>(RHS.front());
+                            auto expr = unique_ptr_cast<ExprNode>(RHS.back());
+                            auto pro = std::make_unique<ForPrologueNode>(std::make_unique<VarInitNode>(std::move(dcl), std::move(expr)));
+                            pro->init->parent = pro.get();
+                            pro->init->dcl->parent = pro->init.get();
+                            pro->init->val->parent = pro->init.get();
+                            new_node = std::move(pro);
                             break;
                         }
                         case forprologue_expr1BECOMESexpr1: {
-                            std::unique_ptr<ExprNode> L = unique_ptr_cast<ExprNode>(RHS.front());
-                            std::unique_ptr<ExprNode> R = unique_ptr_cast<ExprNode>(RHS.back());
-                            new_node = std::make_unique<ForPrologueNode>(std::make_unique<AssignmentNode>(std::move(L), std::move(R)));
+                            auto L = unique_ptr_cast<ExprNode>(RHS.front());
+                            auto R = unique_ptr_cast<ExprNode>(RHS.back());
+                            auto pro = std::make_unique<ForPrologueNode>(std::make_unique<AssignmentNode>(std::move(L), std::move(R)));
+                            pro->asst->parent = pro.get();
+                            pro->asst->LHS->parent = pro->asst.get();
+                            pro->asst->RHS->parent = pro->asst.get();
+                            new_node = std::move(pro);
                             break;
                         }
                         case forepilogue_expr1BECOMESexpr1: {
-                            std::unique_ptr<ExprNode> L = unique_ptr_cast<ExprNode>(RHS.front());
-                            std::unique_ptr<ExprNode> R = unique_ptr_cast<ExprNode>(RHS.back());
-                            new_node = std::make_unique<AssignmentNode>(std::move(L), std::move(R));
+                            auto L = unique_ptr_cast<ExprNode>(RHS.front());
+                            auto R = unique_ptr_cast<ExprNode>(RHS.back());
+                            auto asst = std::make_unique<AssignmentNode>(std::move(L), std::move(R));
+                            asst->LHS->parent = asst.get();
+                            asst->RHS->parent = asst.get();
+                            new_node = std::move(asst);
                             break;
                         }
                         case statement_BREAKSEMI: {
@@ -346,20 +389,25 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                             break;
                         }
                         case statement_expr1SEMI: {
-                            new_node = unique_ptr_cast<ExprNode>(RHS.at(0));
+                            new_node = unique_ptr_cast<ExprNode>(RHS.front());
                             break;
                         }
                         case statement_DELETEexpr1SEMI: {
-                            std::unique_ptr<ExprNode> ptr = unique_ptr_cast<ExprNode>(RHS.at(1));
-                            new_node = std::make_unique<DeleteNode>(std::move(ptr));
+                            auto del = std::make_unique<DeleteNode>(unique_ptr_cast<ExprNode>(RHS.at(1)));
+                            del->ptr->parent = del.get();
+                            new_node = std::move(del);
                             break;
                         }
                         case statement_PRINTLPARENargsRPARENSEMI: {
-                            new_node = std::make_unique<PrintNode>(unique_ptr_cast<ArgsNode>(RHS.at(2)));
+                            auto print = std::make_unique<PrintNode>(unique_ptr_cast<ArgsNode>(RHS.at(2)));
+                            print->args->parent = print.get();
+                            new_node = std::move(print);
                             break;
                         }
                         case statement_RETURNexpr1SEMI: {
-                            new_node = std::make_unique<ReturnNode>(unique_ptr_cast<ExprNode>(RHS.at(1)));
+                            auto ret = std::make_unique<ReturnNode>(unique_ptr_cast<ExprNode>(RHS.at(1)));
+                            ret->expr->parent = ret.get();
+                            new_node = std::move(ret);
                             break;
                         }
                         case statement_RETURNSEMI: {
@@ -367,7 +415,10 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                             break;
                         }
                         case statement_WHILELPARENexpr1RPARENLCURLYstatementsRCURLY: {
-                            new_node = std::make_unique<WhileNode>(unique_ptr_cast<ExprNode>(RHS.at(2)), unique_ptr_cast<BlockNode>(RHS.at(5)));
+                            auto w = std::make_unique<WhileNode>(unique_ptr_cast<ExprNode>(RHS.at(2)), unique_ptr_cast<BlockNode>(RHS.at(5)));
+                            w->condition->parent = w.get();
+                            w->statements->parent = w.get();
+                            new_node = std::move(w);
                             break;
                         }
                         case statements_: {
@@ -395,23 +446,39 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                         case expr11_expr12:
                         case expr12_expr13:
                         case expr13_expr14:
-                        case forepilogue_expr1:
+                        case forepilogue_expr1: {
                             // exprX -> expr(X+1), a -> b
-                            new_node = std::move(RHS.at(0).node); break;
-                        case expr14_LPARENexpr1RPAREN: // expr14 -> ( expr1 )
-                            new_node = std::move(RHS.at(1).node); break;
-                        case expr14_ID: // expr14 -> ID
-                            new_node = std::make_unique<IDNode>(RHS.front().token.lexeme); break;
-                        case expr14_TRUE: // expr14 -> TRUE
-                            new_node = std::make_unique<TrueNode>(); break;
-                        case expr14_FALSE: // expr14 -> FALSE
-                            new_node = std::make_unique<FalseNode>(); break;
-                        case expr14_NIL: // expr14 -> NIL
-                            new_node = std::make_unique<NilNode>(); break;
-                        case expr14_NUM: // expr14 -> NUM
-                            new_node = std::make_unique<NumNode>(RHS.front().token.lexeme); break;
-                        case expr14_CHARLIT: // expr14 -> CHARLIT
-                            new_node = std::make_unique<CharNode>(RHS.front().token.lexeme); break;
+                            new_node = std::move(RHS.at(0).node);
+                            break;
+                        }
+                        case expr14_LPARENexpr1RPAREN: { // expr14 -> ( expr1 )
+                            new_node = std::move(RHS.at(1).node);
+                            break;
+                        }
+                        case expr14_ID: { // expr14 -> ID
+                            new_node = std::make_unique<IDNode>(RHS.front().token.lexeme);
+                            break;
+                        }
+                        case expr14_TRUE: { // expr14 -> TRUE
+                            new_node = std::make_unique<TrueNode>();
+                            break;
+                        }
+                        case expr14_FALSE: { // expr14 -> FALSE
+                            new_node = std::make_unique<FalseNode>();
+                            break;
+                        }
+                        case expr14_NIL: { // expr14 -> NIL
+                            new_node = std::make_unique<NilNode>();
+                            break;
+                        }
+                        case expr14_NUM: { // expr14 -> NUM
+                            new_node = std::make_unique<NumNode>(RHS.front().token.lexeme);
+                            break;
+                        }
+                        case expr14_CHARLIT: { // expr14 -> CHARLIT
+                            new_node = std::make_unique<CharNode>(RHS.front().token.lexeme);
+                            break;
+                        }
                         case expr1_expr1ORexpr2:
                         case expr2_expr2ANDexpr3:
                         case expr3_expr3BITORexpr4:
@@ -432,12 +499,17 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                         case expr10_expr10MODexpr11:
                         case expr12_expr13EXPexpr12: {
                             // arg1 op arg2
-                            new_node = std::make_unique<BinaryExprNode>(prod.RHS.at(1), unique_ptr_cast<ExprNode>(RHS.front()), unique_ptr_cast<ExprNode>(RHS.back()));
+                            auto expr = std::make_unique<BinaryExprNode>(prod.RHS.at(1), unique_ptr_cast<ExprNode>(RHS.front()), unique_ptr_cast<ExprNode>(RHS.back()));
+                            expr->LHS->parent = expr.get();
+                            expr->RHS->parent = expr.get();
+                            new_node = std::move(expr);
                             break;
                         }
                         case expr13_expr13ARROWID:
                         case expr13_expr13DOTID: { // arg->ID, arg.ID
-                            new_node = std::make_unique<MemberAccessExprNode>(prod.RHS.at(1), unique_ptr_cast<ExprNode>(RHS.front()), RHS.back().token.lexeme);
+                            auto ref = std::make_unique<MemberAccessExprNode>(prod.RHS.at(1), unique_ptr_cast<ExprNode>(RHS.front()), RHS.back().token.lexeme);
+                            ref->arg->parent = ref.get();
+                            new_node = std::move(ref);
                             break;
                         }
                         case expr11_ATexpr11:
@@ -448,12 +520,16 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                         case expr11_DECRexpr11:
                         case expr11_SUBexpr11:
                         case expr11_PLUSexpr11: { // op arg
-                            new_node = std::make_unique<UnaryExprNode>(prod.RHS.front(), unique_ptr_cast<ExprNode>(RHS.back()));
+                            auto un = std::make_unique<UnaryExprNode>(RHS.front().token.type, unique_ptr_cast<ExprNode>(RHS.back()));
+                            un->arg->parent = un.get();
+                            new_node = std::move(un);
                             break;
                         }
                         case expr13_expr13INCR:
                         case expr13_expr13DECR: { // arg op
-                            new_node = std::make_unique<UnaryExprNode>(prod.RHS.back(), unique_ptr_cast<ExprNode>(RHS.front()));
+                            auto un = std::make_unique<UnaryExprNode>(RHS.back().token.type, unique_ptr_cast<ExprNode>(RHS.front()));
+                            un->arg->parent = un.get();
+                            new_node = std::move(un);
                             break;
                         }
                         case expr14_READLPARENRPAREN: {
@@ -461,7 +537,9 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                             break;
                         }
                         case expr14_IDLPARENargsRPAREN: {
-                            new_node = std::make_unique<FunctionCallNode>(RHS.front().token.lexeme, unique_ptr_cast<ArgsNode>(RHS.at(2)));
+                            auto call = std::make_unique<FunctionCallNode>(RHS.front().token.lexeme, unique_ptr_cast<ArgsNode>(RHS.at(2)));
+                            call->args->parent = call.get();
+                            new_node = std::move(call);
                             break;
                         }
                         case expr14_IDLPARENRPAREN: {
@@ -469,7 +547,7 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                             break;
                         }
                         case expr14_NEWtypeLBRACKNUMRBRACK: {
-                            std::unique_ptr<TypeNode> type = unique_ptr_cast<TypeNode>(RHS.at(1));
+                            auto type = unique_ptr_cast<TypeNode>(RHS.at(1));
                             new_node = std::make_unique<AllocNode>(type->lexeme + '*', std::stoi(RHS.at(3).token.lexeme));
                             break;
                         }
