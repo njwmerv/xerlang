@@ -71,7 +71,11 @@ struct Production {
 
 struct ASTNode {
     ASTNode* parent = nullptr;
-    static const Parser::ParserSymbol node_type;
+    const Parser::ParserSymbol node_type;
+
+    ASTNode() : parent{nullptr}, node_type{Parser::ParserSymbol::DOLLAR} {}
+    ASTNode(Parser::ParserSymbol type) : parent{nullptr}, node_type{type} {}
+
     virtual ~ASTNode() = default;
 };
 

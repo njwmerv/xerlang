@@ -2,84 +2,119 @@
 #include <memory>
 #include <utility>
 
-// Structural
+//// Base Classes
 
+ArgsNode::ArgsNode() : ASTNode{Parser::ParserSymbol::args}, args{} {}
 
-StructDefNode::StructDefNode(std::string id, std::unique_ptr<DeclarationsNode> dcls) : id{std::move(id)}, fields{std::move(dcls)} {}
+DeclarationsNode::DeclarationsNode() : ASTNode{Parser::ParserSymbol::dcls}, declarations{} {}
 
-ProcedureNode::ProcedureNode(std::string id, std::string return_type, std::unique_ptr<DeclarationsNode> params, std::unique_ptr<BlockNode> block)
-    : id{std::move(id)}, symbol_table{}, params{std::move(params)}, block{std::move(block)}, return_type{std::move(return_type)} {}
+TypeNode::TypeNode(std::string lexeme) : ASTNode{Parser::ParserSymbol::type}, lexeme{std::move(lexeme)} {}
 
-MainNode::MainNode(std::unique_ptr<BlockNode> bl) : ProcedureNode{"main", "int", nullptr, std::move(bl)} {}
+StarNode::StarNode() : ASTNode{Parser::ParserSymbol::AT}, count{0} {}
 
-// Operations
+ForPrologueNode::ForPrologueNode(std::unique_ptr<VarInitNode> init)
+    : ASTNode{Parser::ParserSymbol::forprologue}, init{std::move(init)}, asst{nullptr} {}
+ForPrologueNode::ForPrologueNode(std::unique_ptr<AssignmentNode> asst)
+    : ASTNode{Parser::ParserSymbol::forprologue}, init{nullptr}, asst{std::move(asst)} {}
 
-ExprNode::ExprNode() = default;
+StructDefNode::StructDefNode(std::string id, std::unique_ptr<DeclarationsNode> dcls)
+    : ASTNode{Parser::ParserSymbol::structdef}, id{std::move(id)}, fields{std::move(dcls)} {}
 
-ExprNode::ExprNode(std::string type) : type{std::move(type)} {}
+ProcedureNode::ProcedureNode(std::string id, std::string return_type, std::unique_ptr<DeclarationsNode> params,
+                             std::unique_ptr<BlockNode> block)
+    : ASTNode{Parser::ParserSymbol::procedure}, id{std::move(id)}, symbol_table{}, params{std::move(params)},
+      block{std::move(block)}, return_type{std::move(return_type)} {}
+ProcedureNode::ProcedureNode(std::string id, std::string return_type, std::unique_ptr<DeclarationsNode> params,
+                             std::unique_ptr<BlockNode> block, Parser::ParserSymbol node_type)
+    : ASTNode{node_type}, id{std::move(id)}, symbol_table{}, params{std::move(params)},
+      block{std::move(block)}, return_type{std::move(return_type)} {}
 
-BinaryExprNode::BinaryExprNode(Parser::ParserSymbol op, std::unique_ptr<ExprNode> l, std::unique_ptr<ExprNode> r) : op{op}, LHS{std::move(l)}, RHS{std::move(r)} {}
+MainNode::MainNode(std::unique_ptr<BlockNode> b)
+    : ProcedureNode{"main", "int", nullptr, std::move(b), Parser::ParserSymbol::MAIN} {}
 
-MemberAccessExprNode::MemberAccessExprNode(Parser::ParserSymbol op, std::unique_ptr<ExprNode> arg, std::string id) : op{op}, arg{std::move(arg)}, id{std::move(id)} {}
+ProgramNode::ProgramNode()
+    : ASTNode{Parser::ParserSymbol::start}, struct_defs{}, global_vars{}, procedures{}, main{nullptr} {}
 
-UnaryExprNode::UnaryExprNode(Parser::ParserSymbol op, std::unique_ptr<ExprNode> arg) : op{op}, arg{std::move(arg)} {}
+BlockNode::BlockNode() : ASTNode{Parser::ParserSymbol::statements}, statements{} {}
 
-NumNode::NumNode(const std::string& lexeme) : val{std::stoi(lexeme)} { type = "int"; }
+//// Statements
 
-CharNode::CharNode(const std::string& lexeme) : val{(lexeme.size() == 3) ? lexeme.at(1) : lexeme.at(2)} { type = "char"; }
+StatementNode::StatementNode(Parser::ParserSymbol node_type) : ASTNode{node_type} {}
 
-TrueNode::TrueNode() : ExprNode{"bool"}, val{true} {}
+// Expressions
 
-FalseNode::FalseNode() : ExprNode{"bool"}, val{false} {}
+ExprNode::ExprNode() : StatementNode{Parser::ParserSymbol::expr1} {}
+ExprNode::ExprNode(Parser::ParserSymbol node_type) : StatementNode{node_type} {}
+ExprNode::ExprNode(std::string type, Parser::ParserSymbol node_type)
+    : StatementNode{node_type}, type{std::move(type)} {}
 
-IDNode::IDNode(std::string lexeme) : ExprNode{}, name{std::move(lexeme)} {}
+NumNode::NumNode(const std::string& lexeme)
+    : ExprNode{"int", Parser::ParserSymbol::NUM}, val{std::stoi(lexeme)} {}
 
-NilNode::NilNode() : ExprNode{"*"} {}
+CharNode::CharNode(const std::string& lexeme)
+    : ExprNode{"char", Parser::ParserSymbol::CHARLIT},
+      val{(lexeme.size() == 3) ? lexeme.at(1) : lexeme.at(2)} {}
 
-FunctionCallNode::FunctionCallNode(std::string id, std::unique_ptr<ArgsNode> args) : id{std::move(id)}, args{std::move(args)} {}
+TrueNode::TrueNode() : ExprNode{"bool", Parser::ParserSymbol::TRUE}, val{true} {}
 
-ReadCallNode::ReadCallNode() : FunctionCallNode{"read", nullptr} {}
+FalseNode::FalseNode() : ExprNode{"bool", Parser::ParserSymbol::FALSE}, val{false} {}
 
-AllocNode::AllocNode(std::string type, int size) : ptr_type{std::move(type)}, size{size} {}
+IDNode::IDNode(std::string lexeme)
+    : ExprNode{Parser::ParserSymbol::ID}, name{std::move(lexeme)} {}
 
-// Arguments
+NilNode::NilNode() : ExprNode{"*", Parser::ParserSymbol::NIL} {}
 
-TypeNode::TypeNode(std::string lexeme) : lexeme{std::move(lexeme)} {}
+BinaryExprNode::BinaryExprNode(Parser::ParserSymbol op, std::unique_ptr<ExprNode> l, std::unique_ptr<ExprNode> r)
+    : ExprNode{op}, op{op}, LHS{std::move(l)}, RHS{std::move(r)} {}
+
+MemberAccessExprNode::MemberAccessExprNode(Parser::ParserSymbol op, std::unique_ptr<ExprNode> arg, std::string id)\
+    : ExprNode{op}, op{op}, arg{std::move(arg)}, id{std::move(id)} {}
+
+UnaryExprNode::UnaryExprNode(Parser::ParserSymbol op, std::unique_ptr<ExprNode> arg)
+    : ExprNode{op}, op{op}, arg{std::move(arg)} {}
+
+AllocNode::AllocNode(std::string type, int size)
+    : ExprNode{Parser::ParserSymbol::NEW}, ptr_type{std::move(type)}, size{size} {}
+
+FunctionCallNode::FunctionCallNode(std::string id, std::unique_ptr<ArgsNode> args)
+    : ExprNode{Parser::ParserSymbol::paramlist}, id{std::move(id)}, args{std::move(args)} {}
+FunctionCallNode::FunctionCallNode(std::string id, std::unique_ptr<ArgsNode> args, Parser::ParserSymbol node_type)
+    : ExprNode{node_type}, id{std::move(id)}, args{std::move(args)} {}
+
+ReadCallNode::ReadCallNode() : FunctionCallNode{"read", nullptr, Parser::ParserSymbol::READ} {}
+
+/////////
 
 // Statements
 
-VarInitNode::VarInitNode(std::unique_ptr<DeclarationNode> dcl) : dcl{std::move(dcl)}, val{nullptr} {}
-VarInitNode::VarInitNode(std::unique_ptr<DeclarationNode> dcl, std::unique_ptr<ExprNode> val) : dcl{std::move(dcl)}, val{std::move(val)} {}
+DeclarationNode::DeclarationNode(std::string type, std::string id)
+    : StatementNode{Parser::ParserSymbol::dcl}, type{std::move(type)}, id{std::move(id)} {}
 
-ForNode::ForNode(std::unique_ptr<ForPrologueNode> pro, std::unique_ptr<ExprNode> cond, std::unique_ptr<StatementNode> asst, std::unique_ptr<BlockNode> block)
-    : prologue{std::move(pro)}, cond{std::move(cond)}, epilogue{std::move(asst)}, block{std::move(block)} {}
+VarInitNode::VarInitNode(std::unique_ptr<DeclarationNode> dcl)
+    : StatementNode{Parser::ParserSymbol::expr2}, dcl{std::move(dcl)}, val{nullptr} {}
+VarInitNode::VarInitNode(std::unique_ptr<DeclarationNode> dcl, std::unique_ptr<ExprNode> val)
+    : StatementNode{Parser::ParserSymbol::expr2}, dcl{std::move(dcl)}, val{std::move(val)} {}
 
-ForPrologueNode::ForPrologueNode(std::unique_ptr<VarInitNode> init) : init{std::move(init)}, asst{nullptr} {}
-ForPrologueNode::ForPrologueNode(std::unique_ptr<AssignmentNode> asst) : init{nullptr}, asst{std::move(asst)} {}
+IfNode::IfNode() : StatementNode{Parser::ParserSymbol::IF}, clauses{} {}
 
-DeleteNode::DeleteNode(std::unique_ptr<ExprNode> ptr) : ptr{std::move(ptr)} {}
+DeleteNode::DeleteNode(std::unique_ptr<ExprNode> ptr)
+    : StatementNode{Parser::ParserSymbol::DELETE}, ptr{std::move(ptr)} {}
 
-PrintNode::PrintNode(std::unique_ptr<ArgsNode> args) : args{std::move(args)} {}
+PrintNode::PrintNode(std::unique_ptr<ArgsNode> args)
+    : StatementNode{Parser::ParserSymbol::PRINT}, args{std::move(args)} {}
 
-ReturnNode::ReturnNode(std::unique_ptr<ExprNode> expr) : StatementNode{}, expr{std::move(expr)} {}
+ReturnNode::ReturnNode(std::unique_ptr<ExprNode> expr)
+    : StatementNode{Parser::ParserSymbol::RETURN}, expr{std::move(expr)} {}
 
-WhileNode::WhileNode(std::unique_ptr<ExprNode> condition, std::unique_ptr<BlockNode> statements) : condition{std::move(condition)}, statements{std::move(statements)} {}
+WhileNode::WhileNode(std::unique_ptr<ExprNode> condition, std::unique_ptr<BlockNode> statements)
+    : StatementNode{Parser::ParserSymbol::WHILE}, condition{std::move(condition)}, statements{std::move(statements)} {}
 
+AssignmentNode::AssignmentNode(std::unique_ptr<ExprNode> LHS, std::unique_ptr<ExprNode> RHS)
+    : StatementNode{Parser::ParserSymbol::BECOMES}, LHS{std::move(LHS)}, RHS{std::move(RHS)} {}
 
-// Assignment
+ForNode::ForNode(std::unique_ptr<ForPrologueNode> pro, std::unique_ptr<ExprNode> cond,
+                 std::unique_ptr<StatementNode> asst, std::unique_ptr<BlockNode> block)
+    : StatementNode{Parser::ParserSymbol::FOR}, prologue{std::move(pro)}, cond{std::move(cond)},
+      epilogue{std::move(asst)}, block{std::move(block)} {}
 
-AssignmentNode::AssignmentNode(std::unique_ptr<ExprNode> LHS, std::unique_ptr<ExprNode> RHS) : LHS{std::move(LHS)}, RHS{std::move(RHS)} {}
-
-DeclarationNode::DeclarationNode(std::string type, std::string id) : type{std::move(type)}, id{std::move(id)} {}
-
-ProgramNode::ProgramNode() : ASTNode{}, struct_defs{}, global_vars{}, procedures{}, main{nullptr} {}
-
-ArgsNode::ArgsNode() : ASTNode{}, args{} {}
-
-StarNode::StarNode() : ASTNode{}, count{0} {}
-
-IfNode::IfNode() : StatementNode{}, clauses{} {}
-
-BreakNode::BreakNode() : StatementNode{} {}
-
-DeclarationsNode::DeclarationsNode() : ASTNode{}, declarations{} {}
+BreakNode::BreakNode() : StatementNode{Parser::ParserSymbol::BREAK} {}

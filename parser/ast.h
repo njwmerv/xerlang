@@ -5,7 +5,18 @@
 #include <memory>
 #include "../util/types.h"
 
+struct ArgsNode;
+struct DeclarationsNode;
+struct TypeNode;
+struct StarNode;
+struct ForPrologueNode;
+struct ProgramNode;
+struct StructDefNode;
+struct ProcedureNode;
+    struct MainNode;
+struct BlockNode;
 struct StatementNode;
+    struct DeclarationNode;
     struct VarInitNode;
     struct IfNode;
     struct DeleteNode;
@@ -15,44 +26,47 @@ struct StatementNode;
     struct AssignmentNode;
     struct ForNode;
     struct BreakNode;
-struct DeclarationNode;
-struct DeclarationsNode;
-struct StructDefNode;
-struct ExprNode;
-    struct NumNode;
-    struct CharNode;
-    struct TrueNode;
-    struct FalseNode;
-    struct IDNode;
-    struct NilNode;
-    struct BinaryExprNode;
-    struct MemberAccessExprNode;
-    struct UnaryExprNode;
-    struct AllocNode;
-    struct FunctionCallNode;
-        struct ReadCallNode;
-struct ArgsNode;
-struct TypeNode;
-struct StarNode;
-struct BlockNode;
-struct ForPrologueNode;
-struct ProcedureNode;
-    struct MainNode;
-struct ProgramNode;
+    struct ExprNode;
+        struct NumNode;
+        struct CharNode;
+        struct TrueNode;
+        struct FalseNode;
+        struct IDNode;
+        struct NilNode;
+        struct BinaryExprNode;
+        struct MemberAccessExprNode;
+        struct UnaryExprNode;
+        struct AllocNode;
+        struct FunctionCallNode;
+            struct ReadCallNode;
 
-struct StatementNode : public ASTNode {};
+//// Base Classes
 
-// Declarations
-
-struct DeclarationNode : public StatementNode {
-    std::string type;
-    std::string id;
-    DeclarationNode(std::string type, std::string id);
+struct ArgsNode : public ASTNode {
+    std::vector<std::unique_ptr<ExprNode>> args;
+    ArgsNode();
 };
 
 struct DeclarationsNode : public ASTNode {
     std::vector<std::unique_ptr<DeclarationNode>> declarations;
     DeclarationsNode();
+};
+
+struct TypeNode : public ASTNode {
+    const std::string lexeme;
+    TypeNode(std::string lexeme);
+};
+
+struct StarNode : public ASTNode {
+    size_t count = 0;
+    StarNode();
+};
+
+struct ForPrologueNode : public ASTNode {
+    std::unique_ptr<VarInitNode> init;
+    std::unique_ptr<AssignmentNode> asst;
+    ForPrologueNode(std::unique_ptr<VarInitNode> init);
+    ForPrologueNode(std::unique_ptr<AssignmentNode> asst);
 };
 
 struct StructDefNode : public ASTNode {
@@ -61,13 +75,46 @@ struct StructDefNode : public ASTNode {
     StructDefNode(std::string id, std::unique_ptr<DeclarationsNode> dcls);
 };
 
+struct ProcedureNode : public ASTNode {
+    std::string id;
+    std::unordered_map<std::string, SymbolTableEntry> symbol_table;
+    std::unique_ptr<DeclarationsNode> params;
+    std::unique_ptr<BlockNode> block;
+    std::string return_type;
+    ProcedureNode(std::string id, std::string return_type, std::unique_ptr<DeclarationsNode> params, std::unique_ptr<BlockNode> block);
+    ProcedureNode(std::string id, std::string return_type, std::unique_ptr<DeclarationsNode> params, std::unique_ptr<BlockNode> block, Parser::ParserSymbol node_type);
+};
 
-// Arithmetic
+struct MainNode : public ProcedureNode {
+    MainNode(std::unique_ptr<BlockNode> b);
+};
+
+struct ProgramNode : public ASTNode {
+    std::vector<std::unique_ptr<StructDefNode>> struct_defs;
+    std::vector<std::unique_ptr<VarInitNode>> global_vars;
+    std::vector<std::unique_ptr<ProcedureNode>> procedures;
+    std::unique_ptr<MainNode> main;
+    ProgramNode();
+};
+
+struct BlockNode : public ASTNode {
+    std::vector<std::unique_ptr<StatementNode>> statements;
+    BlockNode();
+};
+
+//// Statements
+
+struct StatementNode : public ASTNode {
+    StatementNode(Parser::ParserSymbol node_type);
+};
+
+// Expressions
 
 struct ExprNode : public StatementNode {
     std::string type;
     ExprNode();
-    ExprNode(std::string type);
+    ExprNode(Parser::ParserSymbol node_type);
+    ExprNode(std::string type, Parser::ParserSymbol node_type);
 };
 
 struct NumNode : public ExprNode {
@@ -125,44 +172,30 @@ struct AllocNode : public ExprNode {
     AllocNode(std::string type, int size);
 };
 
-// Args
-
-struct ArgsNode : public ASTNode {
-    std::vector<std::unique_ptr<ExprNode>> args;
-    ArgsNode();
-};
-
 struct FunctionCallNode : public ExprNode {
     const std::string id;
     std::unique_ptr<ArgsNode> args;
     FunctionCallNode(std::string id, std::unique_ptr<ArgsNode> args);
+    FunctionCallNode(std::string id, std::unique_ptr<ArgsNode> args, Parser::ParserSymbol node_type);
 };
 
 struct ReadCallNode : public FunctionCallNode {
     ReadCallNode();
 };
 
-struct TypeNode : public ASTNode {
-    const std::string lexeme;
-    TypeNode(std::string lexeme);
-};
-
-struct StarNode : public ASTNode {
-    size_t count = 0;
-    StarNode();
-};
-
 // Statements
+
+struct DeclarationNode : public StatementNode {
+    std::string type;
+    std::string id;
+    DeclarationNode(std::string type, std::string id);
+};
 
 struct VarInitNode : public StatementNode {
     std::unique_ptr<DeclarationNode> dcl;
     std::unique_ptr<ExprNode> val;
     VarInitNode(std::unique_ptr<DeclarationNode> dcl);
     VarInitNode(std::unique_ptr<DeclarationNode> dcl, std::unique_ptr<ExprNode> val);
-};
-
-struct BlockNode : public ASTNode {
-    std::vector<std::unique_ptr<StatementNode>> statements;
 };
 
 struct IfNode : public StatementNode {
@@ -196,19 +229,10 @@ struct WhileNode : public StatementNode {
     WhileNode(std::unique_ptr<ExprNode> condition, std::unique_ptr<BlockNode> statements);
 };
 
-// Assignment
-
 struct AssignmentNode : public StatementNode {
     std::unique_ptr<ExprNode> LHS;
     std::unique_ptr<ExprNode> RHS;
     AssignmentNode(std::unique_ptr<ExprNode> LHS, std::unique_ptr<ExprNode> RHS);
-};
-
-struct ForPrologueNode : public ASTNode {
-    std::unique_ptr<VarInitNode> init;
-    std::unique_ptr<AssignmentNode> asst;
-    ForPrologueNode(std::unique_ptr<VarInitNode> init);
-    ForPrologueNode(std::unique_ptr<AssignmentNode> asst);
 };
 
 struct ForNode : public StatementNode {
@@ -221,29 +245,6 @@ struct ForNode : public StatementNode {
 
 struct BreakNode : public StatementNode {
     BreakNode();
-};
-
-// Structural
-
-struct ProcedureNode : public ASTNode {
-    std::string id;
-    std::unordered_map<std::string, SymbolTableEntry> symbol_table;
-    std::unique_ptr<DeclarationsNode> params;
-    std::unique_ptr<BlockNode> block;
-    std::string return_type;
-    ProcedureNode(std::string id, std::string return_type, std::unique_ptr<DeclarationsNode> params, std::unique_ptr<BlockNode> block);
-};
-
-struct MainNode : public ProcedureNode {
-    MainNode(std::unique_ptr<BlockNode> block);
-};
-
-struct ProgramNode : public ASTNode {
-    std::vector<std::unique_ptr<StructDefNode>> struct_defs;
-    std::vector<std::unique_ptr<VarInitNode>> global_vars;
-    std::vector<std::unique_ptr<ProcedureNode>> procedures;
-    std::unique_ptr<MainNode> main;
-    ProgramNode();
 };
 
 #endif // XERLANG_AST_H
