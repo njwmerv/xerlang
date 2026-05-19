@@ -4,8 +4,18 @@
 bool is_pointer(const std::string& type) { return type.ends_with('*'); }
 
 bool is_lvalue(const std::unique_ptr<ExprNode>& node) {
-    // just check for presence of ID node
-    return false;
+    switch (node->node_type) {
+        case Parser::ParserSymbol::ID:
+            return true;
+        case Parser::ParserSymbol::NUM:
+        case Parser::ParserSymbol::CHARLIT:
+        case Parser::ParserSymbol::TRUE:
+        case Parser::ParserSymbol::FALSE:
+        case Parser::ParserSymbol::NIL:
+            return false;
+        default:
+            return false;
+    }
 }
 
 bool is_struct(const std::string& type) { return type.starts_with("struct"); }
@@ -73,11 +83,17 @@ void TypeChecker::visit(struct PrintNode& a) {
 void TypeChecker::visit(struct ReturnNode& a) {
     if (!a.expr) return;
     a.expr->accept(*this);
-    ASTNode* parent = a.parent;
-    while (parent && parent->node_type != Parser::ParserSymbol::start)
-        parent = parent->parent;
-    auto* prog = dynamic_cast<ProgramNode*>(parent);
-//    if (a.expr->type != prog->)
+    ASTNode* prog = a.parent;
+    ASTNode* proc = nullptr;
+    while (prog && prog->node_type != Parser::ParserSymbol::start) {
+        if (!proc && prog->node_type == Parser::ParserSymbol::procedure) proc = prog;
+        prog = prog->parent;
+    }
+    auto* PROG = dynamic_cast<ProgramNode*>(prog);
+    auto* PROC = dynamic_cast<ProcedureNode*>(proc);
+    if (a.expr->type != PROG->procedures.at(PROC->id)->return_type) {
+        throw std::runtime_error{"ERROR: Returning invalid value for procedure: " + PROC->id};
+    }
 }
 void TypeChecker::visit(struct WhileNode& a) {
     a.condition->accept(*this);
