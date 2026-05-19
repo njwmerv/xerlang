@@ -120,6 +120,11 @@ struct ASTNode {
 
 // Analysis/Code Generation
 
+// Base Types
+#define TYPE_INT "int"
+#define TYPE_CHAR "char"
+#define TYPE_BOOL "bool"
+
 struct Visitor {
     virtual ~Visitor() = default;
     virtual void visit(struct ArgsNode&) = 0;

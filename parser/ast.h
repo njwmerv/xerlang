@@ -67,6 +67,7 @@ struct ProgramNode : public ASTNode {
     std::vector<std::unique_ptr<VarInitNode>> global_vars;
     std::vector<std::unique_ptr<ProcedureNode>> procedures;
     std::unique_ptr<MainNode> main;
+    std::unordered_map<std::string, SymbolTableEntry> global_symbol_table;
     ProgramNode();
     void accept(Visitor& v) override;
 };

@@ -33,7 +33,8 @@ MainNode::MainNode(std::unique_ptr<BlockNode> b)
     : ProcedureNode{"main", "int", nullptr, std::move(b), Parser::ParserSymbol::MAIN} {}
 
 ProgramNode::ProgramNode()
-    : ASTNode{Parser::ParserSymbol::start}, struct_defs{}, global_vars{}, procedures{}, main{nullptr} {}
+    : ASTNode{Parser::ParserSymbol::start}, struct_defs{}, global_vars{}, procedures{}, main{nullptr},
+      global_symbol_table{} {}
 
 BlockNode::BlockNode() : ASTNode{Parser::ParserSymbol::statements}, statements{} {}
 

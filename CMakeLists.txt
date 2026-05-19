@@ -14,6 +14,8 @@ add_library(XerlangCore
   scanner/scanner.h
   util/types.h
   visitors/printer.h
+  visitors/typecheck.cpp
+  visitors/typecheck.h
 )
 
 target_compile_features(XerlangCore PUBLIC cxx_std_23)
