@@ -14,6 +14,11 @@ incr : () -> void {
     return;
 }
 
+decr : (int@ x, int y) -> void {
+    @x = @x - y;
+    return;
+}
+
 struct Data {
     char a;
     char b;

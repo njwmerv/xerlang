@@ -175,6 +175,10 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                         case procedures_dclSEMIprocedures: {
                             auto program = unique_ptr_cast<ProgramNode>(RHS.back());
                             auto var_init = std::make_unique<VarInitNode>(unique_ptr_cast<DeclarationNode>(RHS.front()));
+
+                            SymbolTableEntry ste{.type = var_init->dcl->type, .scope = program.get()};
+                            program->symbol_table.insert({var_init->dcl->id, ste});
+
                             program->global_vars.insert(program->global_vars.begin(), std::move(var_init));
                             program->global_vars.front()->parent = program.get();
                             program->global_vars.front()->dcl->parent = program->global_vars.front().get();
@@ -187,6 +191,10 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                             init->dcl->parent = init.get();
                             init->val->parent = init.get();
                             init->parent = program.get();
+
+                            SymbolTableEntry ste{.type = init->dcl->type, .scope = program.get()};
+                            program->symbol_table.insert({init->dcl->id, ste});
+
                             program->global_vars.insert(program->global_vars.begin(), std::move(init));
                             new_node = std::move(program);
                             break;
@@ -228,6 +236,12 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                             }
                             proc->params->parent = proc.get();
                             proc->block->parent = proc.get();
+
+                            for (auto& dcl : proc->params->declarations) {
+                                SymbolTableEntry ste{.type = dcl->type, .scope = proc.get(), .is_param = true};
+                                proc->symbol_table.insert({dcl->id, ste});
+                            }
+
                             new_node = std::move(proc);
                             break;
                         }

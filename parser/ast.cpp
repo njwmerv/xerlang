@@ -34,7 +34,7 @@ MainNode::MainNode(std::unique_ptr<BlockNode> b)
 
 ProgramNode::ProgramNode()
     : ASTNode{Parser::ParserSymbol::start}, struct_defs{}, global_vars{}, procedures{}, main{nullptr},
-      global_symbol_table{} {}
+      symbol_table{} {}
 
 BlockNode::BlockNode() : ASTNode{Parser::ParserSymbol::statements}, statements{} {}
 

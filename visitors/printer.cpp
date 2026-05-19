@@ -4,6 +4,8 @@
 
 #define INDENT 4
 
+// Helpers
+
 size_t depth(const struct ASTNode& ast) {
     size_t depth = 0;
     const ASTNode* a = &ast;
@@ -15,6 +17,12 @@ void print_indent(size_t indent, const std::string& message) {
     for (size_t i = 1; i < indent; i++) std::cout << ' ';
     std::cout << message;
 }
+
+inline void print_STE(size_t indent, const std::string& name, const SymbolTableEntry& STE) {
+    print_indent(indent + INDENT, "> " + name + " : " + STE.type + '\n');
+}
+
+// Implementation
 
 void Printer::visit(struct ArgsNode& a) {
     print_indent(depth(a), "↪ Args\n");
@@ -40,6 +48,10 @@ void Printer::visit(struct ProgramNode& a) {
     print_indent(indent + (INDENT >> 1), "> Global Vars\n");
     for (auto& gv : a.global_vars) gv->accept(*this);
 
+    print_indent(indent + (INDENT >> 1), "> Global Symbol Table\n");
+    for (auto& [name, STE] : a.symbol_table)
+        print_STE(indent, name, STE);
+
     print_indent(indent + (INDENT >> 1), "> Procedures\n");
     for (auto& proc : a.procedures) proc->accept(*this);
 
@@ -62,8 +74,7 @@ void Printer::visit(struct ProcedureNode& a) {
 
     print_indent(indent + (INDENT >> 1), "> Symbol Table\n");
     for (auto& [name, STE] : a.symbol_table) {
-        print_indent(indent + INDENT, "> " + name + '\n');
-        // TODO: modify this to show SymbolTableEntry
+        print_STE(indent, name, STE);
     }
 
     print_indent(indent + (INDENT >> 1), "> Statements\n");
@@ -75,8 +86,7 @@ void Printer::visit(struct MainNode& a) {
 
     print_indent(indent + (INDENT >> 1), "> Symbol Table\n");
     for (auto& [name, STE] : a.symbol_table) {
-        print_indent(indent + INDENT, "> " + name + '\n');
-        // TODO: modify this to show SymbolTableEntry
+        print_STE(indent, name, STE);
     }
 
     print_indent(indent + (INDENT >> 1), "> Statements\n");
