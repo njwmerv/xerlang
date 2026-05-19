@@ -8,13 +8,50 @@ bool is_pointer(const std::string& type) { return type.ends_with('*'); }
 bool is_lvalue(const std::unique_ptr<ExprNode>& node) {
     switch (node->node_type) {
         case Parser::ParserSymbol::ID:
+        case Parser::ParserSymbol::DOT:
+        case Parser::ParserSymbol::ARROW:
             return true;
         case Parser::ParserSymbol::NUM:
         case Parser::ParserSymbol::CHARLIT:
         case Parser::ParserSymbol::TRUE:
         case Parser::ParserSymbol::FALSE:
         case Parser::ParserSymbol::NIL:
+        case Parser::ParserSymbol::paramlist:
+        case Parser::ParserSymbol::NEW:
             return false;
+        case Parser::ParserSymbol::OR:
+        case Parser::ParserSymbol::AND:
+        case Parser::ParserSymbol::BITOR:
+        case Parser::ParserSymbol::BITXOR:
+        case Parser::ParserSymbol::BITAND:
+        case Parser::ParserSymbol::EQUALS:
+        case Parser::ParserSymbol::NEQ:
+        case Parser::ParserSymbol::LT:
+        case Parser::ParserSymbol::LEQ:
+        case Parser::ParserSymbol::GT:
+        case Parser::ParserSymbol::GEQ:
+        case Parser::ParserSymbol::LSHIFT:
+        case Parser::ParserSymbol::RSHIFT:
+        case Parser::ParserSymbol::PLUS:
+        case Parser::ParserSymbol::SUB:
+        case Parser::ParserSymbol::MULT:
+        case Parser::ParserSymbol::DIV:
+        case Parser::ParserSymbol::MOD:
+        case Parser::ParserSymbol::EXP: {
+            auto* bn = dynamic_cast<BinaryExprNode*>(node.get());
+            return is_lvalue(bn->LHS) || is_lvalue(bn->RHS);
+        }
+        case Parser::ParserSymbol::AT:
+        case Parser::ParserSymbol::ADDR:
+        case Parser::ParserSymbol::NOT:
+        case Parser::ParserSymbol::BITNOT:
+        case Parser::ParserSymbol::INCR:
+        case Parser::ParserSymbol::DECR:
+        case Parser::ParserSymbol::expr3:
+        case Parser::ParserSymbol::expr4: {
+            auto* un = dynamic_cast<UnaryExprNode*>(node.get());
+            return is_lvalue(un->arg);
+        }
         default:
             return false;
     }

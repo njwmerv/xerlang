@@ -543,7 +543,14 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                         case expr11_DECRexpr11:
                         case expr11_SUBexpr11:
                         case expr11_PLUSexpr11: { // op arg
-                            auto un = std::make_unique<UnaryExprNode>(RHS.front().token.type, unique_ptr_cast<ExprNode>(RHS.back()));
+                            Parser::ParserSymbol ps = RHS.front().token.type;
+                            if (ps == Parser::ParserSymbol::PLUS) {
+                                ps = Parser::ParserSymbol::expr3;
+                            }
+                            else if (ps == Parser::ParserSymbol::SUB) {
+                                ps = Parser::ParserSymbol::expr4;
+                            }
+                            auto un = std::make_unique<UnaryExprNode>(ps, unique_ptr_cast<ExprNode>(RHS.back()));
                             un->arg->parent = un.get();
                             new_node = std::move(un);
                             break;
