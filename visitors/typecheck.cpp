@@ -1,4 +1,5 @@
 #include "typecheck.h"
+#include <sstream>
 
 bool is_pointer(const std::string& type) { return type.ends_with('*'); }
 
@@ -51,9 +52,10 @@ void TypeChecker::visit(struct BlockNode& a) {
 }
 void TypeChecker::visit(struct DeclarationNode& a) {}
 void TypeChecker::visit(struct VarInitNode& a) {
-    // if (a.dcl) a.dcl->accept(*this);
-    if (a.val) a.val->accept(*this);
-    if (a.dcl->type != a.val->type) throw std::runtime_error{"ERROR: Trying to initialize mismatching values"};
+    if (a.val) {
+        a.val->accept(*this);
+        if (a.dcl->type != a.val->type) throw std::runtime_error{"ERROR: Trying to initialize mismatching values"};
+    }
 }
 void TypeChecker::visit(struct IfNode& a) {
     for (auto& clause : a.clauses) {
@@ -71,7 +73,11 @@ void TypeChecker::visit(struct PrintNode& a) {
 void TypeChecker::visit(struct ReturnNode& a) {
     if (!a.expr) return;
     a.expr->accept(*this);
-    // TODO, compare to symbol table
+    ASTNode* parent = a.parent;
+    while (parent && parent->node_type != Parser::ParserSymbol::start)
+        parent = parent->parent;
+    auto* prog = dynamic_cast<ProgramNode*>(parent);
+//    if (a.expr->type != prog->)
 }
 void TypeChecker::visit(struct WhileNode& a) {
     a.condition->accept(*this);
@@ -102,7 +108,28 @@ void TypeChecker::visit(struct FalseNode& a) {
     a.type = TYPE_BOOL;
 }
 void TypeChecker::visit(struct IDNode& a) {
-    // TODO
+    ASTNode* prog = a.parent;
+    ASTNode* proc = nullptr;
+    ASTNode* scope = nullptr;
+    while (prog->node_type != Parser::ParserSymbol::start) {
+        if (!scope && (prog->node_type == Parser::ParserSymbol::WHILE || prog->node_type == Parser::ParserSymbol::FOR ||
+                       prog->node_type == Parser::ParserSymbol::procedure))
+            scope = prog;
+        if (!proc && prog->node_type == Parser::ParserSymbol::procedure)
+            proc = prog;
+        prog = prog->parent;
+    }
+    std::ostringstream oss;
+    oss << a.name << scope;
+    auto* PROC = dynamic_cast<ProcedureNode*>(proc);
+    if (PROC->symbol_table.contains(oss.str()) && PROC->symbol_table.at(oss.str()).scope == scope) {
+        a.type = PROC->symbol_table.at(oss.str()).type;
+    }
+    auto* PROG = dynamic_cast<ProgramNode*>(prog);
+    if (PROG->symbol_table.contains(oss.str())) {
+        a.type = PROG->symbol_table.at(oss.str()).type;
+    }
+    throw std::runtime_error{"ERROR: Unidentified variable: " + a.name};
 }
 void TypeChecker::visit(struct NilNode& a) {
     a.type = "*";
