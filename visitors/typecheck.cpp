@@ -1,6 +1,8 @@
 #include "typecheck.h"
 #include <sstream>
 
+// Helpers
+
 bool is_pointer(const std::string& type) { return type.ends_with('*'); }
 
 bool is_lvalue(const std::unique_ptr<ExprNode>& node) {
@@ -31,7 +33,21 @@ void TypeChecker::visit(struct ArgsNode& a) {
     for (auto& arg : a.args) {
         arg->accept(*this);
     }
-    // TODO, compare with procedure signature
+
+    auto* func_call = dynamic_cast<FunctionCallNode*>(a.parent);
+    const std::string& id = func_call->id;
+
+    ASTNode* parent = a.parent;
+    while (parent->node_type != Parser::ParserSymbol::start) parent = parent->parent;
+    auto* prog = dynamic_cast<ProgramNode*>(parent);
+    if (!prog->procedures.contains(id)) throw std::runtime_error{"ERROR: Trying to call undefined procedure: " + id};
+    const std::vector<std::unique_ptr<DeclarationNode>>& params = prog->procedures.at(id)->params->declarations;
+
+    if (a.args.size() != params.size()) throw std::runtime_error{"ERROR: Expected " + params.size() + " arguments for " + id + ", got " a.args.size()};
+    for (size_t i = 0; i < a.args.size(); i++) {
+        if (args.at(i).type != params.at(i).type)
+            throw std::runtime_error{"ERROR: Mismatching type for procedure call argument"};
+    }
 }
 void TypeChecker::visit(struct DeclarationsNode& a) {}
 void TypeChecker::visit(struct ForPrologueNode& a) {
