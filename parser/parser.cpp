@@ -202,8 +202,9 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                         case procedures_structdefprocedures: {
                             auto sd = unique_ptr_cast<StructDefNode>(RHS.front());
                             auto program = unique_ptr_cast<ProgramNode>(RHS.back());
-                            program->struct_defs.insert(program->struct_defs.begin(), std::move(sd));
-                            program->struct_defs.front()->parent = program.get();
+                            const std::string id = sd->id;
+                            program->struct_defs.insert({id, std::move(sd)});
+                            program->struct_defs.at(id)->parent = program.get();
                             new_node = std::move(program);
                             break;
                         }
@@ -216,8 +217,9 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                         }
                         case procedures_procedureprocedures: {
                             auto program = unique_ptr_cast<ProgramNode>(RHS.back());
-                            program->procedures.insert(program->procedures.begin(), unique_ptr_cast<ProcedureNode>(RHS.at(0)));
-                            program->procedures.front()->parent = program.get();
+                            auto proc = unique_ptr_cast<ProcedureNode>(RHS.front());
+                            proc->parent = program.get();
+                            program->procedures.insert({proc->id, std::move(proc)});
                             new_node = std::move(program);
                             break;
                         }

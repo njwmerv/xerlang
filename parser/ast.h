@@ -63,9 +63,9 @@ struct MainNode : public ProcedureNode {
 };
 
 struct ProgramNode : public ASTNode {
-    std::vector<std::unique_ptr<StructDefNode>> struct_defs;
+    std::unordered_map<std::string, std::unique_ptr<StructDefNode>> struct_defs;
     std::vector<std::unique_ptr<VarInitNode>> global_vars;
-    std::vector<std::unique_ptr<ProcedureNode>> procedures;
+    std::unordered_map<std::string, std::unique_ptr<ProcedureNode>> procedures;
     std::unique_ptr<MainNode> main;
     std::unordered_map<std::string, SymbolTableEntry> symbol_table;
     ProgramNode();

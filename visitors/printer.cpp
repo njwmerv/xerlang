@@ -43,7 +43,7 @@ void Printer::visit(struct ProgramNode& a) {
     print_indent(indent, "↪ Program\n");
 
     print_indent(indent + (INDENT >> 1), "> Struct Definitions\n");
-    for (auto& sd : a.struct_defs) sd->accept(*this);
+    for (auto& [type, sd] : a.struct_defs) sd->accept(*this);
 
     print_indent(indent + (INDENT >> 1), "> Global Vars\n");
     for (auto& gv : a.global_vars) gv->accept(*this);
@@ -53,13 +53,13 @@ void Printer::visit(struct ProgramNode& a) {
         print_STE(indent, name, STE);
 
     print_indent(indent + (INDENT >> 1), "> Procedures\n");
-    for (auto& proc : a.procedures) proc->accept(*this);
+    for (auto& [id, proc] : a.procedures) proc->accept(*this);
 
     // print_indent(indent + (INDENT >> 1), "> Main\n");
     a.main->accept(*this);
 }
 void Printer::visit(struct StructDefNode& a) {
-    print_indent(depth(a), "↪ Struct Definition\n");
+    print_indent(depth(a), "↪ Struct Definition : " + a.id + '\n');
     a.fields->accept(*this);
 }
 void Printer::visit(struct ProcedureNode& a) {
@@ -93,6 +93,7 @@ void Printer::visit(struct MainNode& a) {
     a.block->accept(*this);
 }
 void Printer::visit(struct BlockNode& a) {
+    if (a.statements.empty()) return;
     print_indent(depth(a), "↪ Block\n");
     for (auto& s : a.statements) s->accept(*this);
 }

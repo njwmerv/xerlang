@@ -31,7 +31,7 @@ void TypeChecker::visit(struct ForPrologueNode& a) {
 }
 void TypeChecker::visit(struct ProgramNode& a) {
     a.main->accept(*this);
-    for (auto& proc : a.procedures) {
+    for (auto& [id, proc] : a.procedures) {
         proc->accept(*this);
     }
     for (auto& init : a.global_vars) {
