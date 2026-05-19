@@ -160,6 +160,7 @@ struct Visitor {
 };
 
 struct SymbolTableEntry {
+    std::string id;
     std::string type;
     int frame_offset = 0;
     ASTNode* scope = nullptr;

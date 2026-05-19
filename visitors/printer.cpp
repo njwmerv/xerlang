@@ -18,8 +18,8 @@ void print_indent(size_t indent, const std::string& message) {
     std::cout << message;
 }
 
-inline void print_STE(size_t indent, const std::string& name, const SymbolTableEntry& STE) {
-    print_indent(indent + INDENT, "> " + name + " : " + STE.type + '\n');
+inline void print_STE(size_t indent, const SymbolTableEntry& STE) {
+    print_indent(indent + INDENT, "> " + STE.id + " : " + STE.type + '\n');
 }
 
 // Implementation
@@ -50,7 +50,7 @@ void Printer::visit(struct ProgramNode& a) {
 
     print_indent(indent + (INDENT >> 1), "> Global Symbol Table\n");
     for (auto& [name, STE] : a.symbol_table)
-        print_STE(indent, name, STE);
+        print_STE(indent, STE);
 
     print_indent(indent + (INDENT >> 1), "> Procedures\n");
     for (auto& [id, proc] : a.procedures) proc->accept(*this);
@@ -74,7 +74,7 @@ void Printer::visit(struct ProcedureNode& a) {
 
     print_indent(indent + (INDENT >> 1), "> Symbol Table\n");
     for (auto& [name, STE] : a.symbol_table) {
-        print_STE(indent, name, STE);
+        print_STE(indent, STE);
     }
 
     print_indent(indent + (INDENT >> 1), "> Statements\n");
@@ -86,7 +86,7 @@ void Printer::visit(struct MainNode& a) {
 
     print_indent(indent + (INDENT >> 1), "> Symbol Table\n");
     for (auto& [name, STE] : a.symbol_table) {
-        print_STE(indent, name, STE);
+        print_STE(indent, STE);
     }
 
     print_indent(indent + (INDENT >> 1), "> Statements\n");

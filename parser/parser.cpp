@@ -1,5 +1,6 @@
 #include "parser.h"
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <memory>
 #include "parser_constants.h"
@@ -176,8 +177,10 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                             auto program = unique_ptr_cast<ProgramNode>(RHS.back());
                             auto var_init = std::make_unique<VarInitNode>(unique_ptr_cast<DeclarationNode>(RHS.front()));
 
-                            SymbolTableEntry ste{.type = var_init->dcl->type, .scope = program.get()};
-                            program->symbol_table.insert({var_init->dcl->id, ste});
+                            SymbolTableEntry ste{.id = var_init->dcl->id, .type = var_init->dcl->type, .scope = program.get()};
+                            std::ostringstream oss;
+                            oss << ste.id << ste.scope;
+                            program->symbol_table.insert({oss.str(), ste});
 
                             program->global_vars.insert(program->global_vars.begin(), std::move(var_init));
                             program->global_vars.front()->parent = program.get();
@@ -192,8 +195,10 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                             init->val->parent = init.get();
                             init->parent = program.get();
 
-                            SymbolTableEntry ste{.type = init->dcl->type, .scope = program.get()};
-                            program->symbol_table.insert({init->dcl->id, ste});
+                            SymbolTableEntry ste{.id = init->dcl->id, .type = init->dcl->type, .scope = program.get()};
+                            std::ostringstream oss;
+                            oss << ste.id << ste.scope;
+                            program->symbol_table.insert({oss.str(), ste});
 
                             program->global_vars.insert(program->global_vars.begin(), std::move(init));
                             new_node = std::move(program);
@@ -240,8 +245,10 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                             proc->block->parent = proc.get();
 
                             for (auto& dcl : proc->params->declarations) {
-                                SymbolTableEntry ste{.type = dcl->type, .scope = proc.get(), .is_param = true};
-                                proc->symbol_table.insert({dcl->id, ste});
+                                SymbolTableEntry ste{.id = dcl->id, .type = dcl->type, .scope = proc.get(), .is_param = true};
+                                std::ostringstream oss;
+                                oss << ste.id << ste.scope;
+                                proc->symbol_table.insert({oss.str(), ste});
                             }
 
                             new_node = std::move(proc);
