@@ -45,7 +45,7 @@ void TypeChecker::visit(struct ArgsNode& a) {
 
     if (a.args.size() != params.size()) throw std::runtime_error{"ERROR: Expected " + params.size() + " arguments for " + id + ", got " a.args.size()};
     for (size_t i = 0; i < a.args.size(); i++) {
-        if (args.at(i).type != params.at(i).type)
+        if (a.args.at(i)->type != params.at(i)->type)
             throw std::runtime_error{"ERROR: Mismatching type for procedure call argument"};
     }
 }
