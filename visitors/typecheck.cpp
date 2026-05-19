@@ -43,7 +43,7 @@ void TypeChecker::visit(struct ArgsNode& a) {
     if (!prog->procedures.contains(id)) throw std::runtime_error{"ERROR: Trying to call undefined procedure: " + id};
     const std::vector<std::unique_ptr<DeclarationNode>>& params = prog->procedures.at(id)->params->declarations;
 
-    if (a.args.size() != params.size()) throw std::runtime_error{"ERROR: Expected " + params.size() + " arguments for " + id + ", got " a.args.size()};
+    if (a.args.size() != params.size()) throw std::runtime_error{"ERROR: Expected " + std::to_string(params.size()) + " arguments for " + id + ", got " + std::to_string(a.args.size())};
     for (size_t i = 0; i < a.args.size(); i++) {
         if (a.args.at(i)->type != params.at(i)->type)
             throw std::runtime_error{"ERROR: Mismatching type for procedure call argument"};
