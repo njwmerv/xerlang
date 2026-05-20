@@ -92,7 +92,7 @@ void TypeChecker::visit(struct DeclarationsNode& a) {}
 void TypeChecker::visit(struct ForPrologueNode& a) {
     if (a.asst) a.asst->accept(*this);
     else if (a.init) a.init->accept(*this);
-    else throw std::runtime_error{"ERROR: Invalid For Prologue"};
+    else throw std::runtime_error{"ERROR: Invalid For Prologue"}; // shouldn't ever throw...
 }
 void TypeChecker::visit(struct ProgramNode& a) {
     a.main->accept(*this);
@@ -115,8 +115,29 @@ void TypeChecker::visit(struct BlockNode& a) {
         statement->accept(*this);
     }
 }
-void TypeChecker::visit(struct DeclarationNode& a) {}
+void TypeChecker::visit(struct DeclarationNode& a) {
+    ASTNode* proc = a.parent;
+    ASTNode* scope = nullptr;
+    while (proc && proc->node_type != Parser::procedure && proc->node_type != Parser::MAIN) {
+        if (proc->node_type == Parser::start) return;
+        if (!scope && (proc->node_type == Parser::procedure || proc->node_type == Parser::MAIN ||
+                      proc->node_type == Parser::WHILE || proc->node_type == Parser::FOR)) {
+            scope = proc;
+        }
+        proc = proc->parent;
+    }
+    if (!scope) scope = proc;
+    auto* PROC = dynamic_cast<ProcedureNode*>(proc);
+
+    std::ostringstream oss;
+    oss << a.id << scope;
+    if (PROC->symbol_table.contains(oss.str())) throw std::runtime_error{"ERROR: Redeclaration of variable: " + a.id};
+
+    SymbolTableEntry ste{.id = a.id, .type = a.type, .scope = scope};
+    PROC->symbol_table.insert({oss.str(), ste});
+}
 void TypeChecker::visit(struct VarInitNode& a) {
+    a.dcl->accept(*this);
     if (!a.val) return;
     a.val->accept(*this);
     if (a.dcl->type != a.val->type) throw std::runtime_error{"ERROR: Trying to initialize mismatching values"};
@@ -177,7 +198,7 @@ void TypeChecker::visit(struct AssignmentNode& a) {
 void TypeChecker::visit(struct ForNode& a) {
     a.prologue->accept(*this);
     a.cond->accept(*this);
-    a.prologue->accept(*this);
+    a.epilogue->accept(*this);
     a.block->accept(*this);
 }
 void TypeChecker::visit(struct BreakNode& a) {
@@ -187,6 +208,7 @@ void TypeChecker::visit(struct BreakNode& a) {
             a.loop_target = parent;
             break;
         }
+        parent = parent->parent;
     }
     if (!a.loop_target) throw std::runtime_error{"ERROR: Using BREAK statement outside of for/while-loop body"};
 }
@@ -206,17 +228,29 @@ void TypeChecker::visit(struct IDNode& a) {
             proc = prog;
         prog = prog->parent;
     }
+    if (!proc) throw std::runtime_error{"ERROR: Unable to find procedure using variable: " + a.name};
 
     std::ostringstream oss;
-    oss << a.name << scope;
-
-    if (!proc) throw std::runtime_error{"ERROR: Unable to find procedure using variable: " + a.name};
     ProcedureNode* PROC = (proc->node_type == Parser::procedure) ? dynamic_cast<ProcedureNode*>(proc) : dynamic_cast<MainNode*>(proc);
+
+    // Local Scope
+    oss << a.name << scope;
     if (PROC->symbol_table.contains(oss.str()) && PROC->symbol_table.at(oss.str()).scope == scope) {
         a.type = PROC->symbol_table.at(oss.str()).type;
         return;
     }
 
+    // Procedure Scope
+    if (PROC != scope) {
+        oss.str("");
+        oss << a.name << PROC;
+        if (PROC->symbol_table.contains(oss.str()) && PROC->symbol_table.at(oss.str()).scope == PROC) {
+            a.type = PROC->symbol_table.at(oss.str()).type;
+            return;
+        }
+    }
+
+    // Global Scope
     auto* PROG = dynamic_cast<ProgramNode*>(prog);
     oss.str("");
     oss << a.name << PROG;

@@ -3,6 +3,7 @@ project(Xerlang VERSION 0.1.0 LANGUAGES CXX)
 
 add_library(XerlangCore
   # SOURCEs
+  visitors/typecheck.cpp
   visitors/printer.cpp
   parser/parser.cpp
   parser/ast.cpp
@@ -13,9 +14,8 @@ add_library(XerlangCore
   parser/ast.h
   scanner/scanner.h
   util/types.h
-  visitors/printer.h
-  visitors/typecheck.cpp
   visitors/typecheck.h
+  visitors/printer.h
 )
 
 target_compile_features(XerlangCore PUBLIC cxx_std_23)
