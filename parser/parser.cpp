@@ -215,8 +215,12 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                         }
                         case structdef_STRUCTIDLCURLYdclsRCURLYSEMI: {
                             auto dcls = unique_ptr_cast<DeclarationsNode>(RHS.at(3));
-                            auto sd = std::make_unique<StructDefNode>(RHS.at(1).token.lexeme, std::move(dcls));
-                            sd->fields->parent = sd.get();
+                            auto sd = std::make_unique<StructDefNode>(RHS.at(1).token.lexeme);
+
+                            for (auto& dcl : dcls->declarations) {
+                                dcl->parent = sd.get();
+                                sd->fields.insert({dcl->id, std::move(dcl)});
+                            }
                             new_node = std::move(sd);
                             break;
                         }

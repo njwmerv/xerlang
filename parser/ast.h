@@ -41,8 +41,8 @@ struct ForPrologueNode : public ASTNode {
 
 struct StructDefNode : public ASTNode {
     const std::string id;
-    std::unique_ptr<DeclarationsNode> fields;
-    StructDefNode(std::string id, std::unique_ptr<DeclarationsNode> dcls);
+    std::unordered_map<std::string, std::unique_ptr<DeclarationNode>> fields;
+    StructDefNode(std::string id);
     void accept(Visitor& v) override;
 };
 

@@ -17,8 +17,8 @@ ForPrologueNode::ForPrologueNode(std::unique_ptr<VarInitNode> init)
 ForPrologueNode::ForPrologueNode(std::unique_ptr<AssignmentNode> asst)
     : ASTNode{Parser::ParserSymbol::forprologue}, init{nullptr}, asst{std::move(asst)} {}
 
-StructDefNode::StructDefNode(std::string id, std::unique_ptr<DeclarationsNode> dcls)
-    : ASTNode{Parser::ParserSymbol::structdef}, id{std::move(id)}, fields{std::move(dcls)} {}
+StructDefNode::StructDefNode(std::string id)
+    : ASTNode{Parser::ParserSymbol::structdef}, id{std::move(id)}, fields{} {}
 
 ProcedureNode::ProcedureNode(std::string id, std::string return_type, std::unique_ptr<DeclarationsNode> params,
                              std::unique_ptr<BlockNode> block)

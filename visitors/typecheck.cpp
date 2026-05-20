@@ -1,6 +1,8 @@
 #include "typecheck.h"
 #include <sstream>
 
+#include <iostream>
+
 // Helpers
 
 bool is_pointer(const std::string& type) { return type.ends_with('*'); }
@@ -192,6 +194,7 @@ void TypeChecker::visit(struct WhileNode& a) {
 }
 void TypeChecker::visit(struct AssignmentNode& a) {
     a.LHS->accept(*this);
+    if (!is_lvalue(a.LHS)) throw std::runtime_error{"ERROR: Trying to assign value to non-LVALUE"};
     a.RHS->accept(*this);
     if (a.LHS->type != a.RHS->type) throw std::runtime_error{"ERROR: Trying to assign mismatching values"};
 }
@@ -311,19 +314,40 @@ void TypeChecker::visit(struct BinaryExprNode& a) {
 }
 void TypeChecker::visit(struct MemberAccessExprNode& a) {
     a.arg->accept(*this);
+
+    ASTNode* prog = a.parent;
+    while (prog->parent) prog = prog->parent;
+    auto* PROG = dynamic_cast<ProgramNode*>(prog);
+
+    if (!is_struct(a.arg->type))
+        throw std::runtime_error{"ERROR: De-referencing variable of unknown STRUCT type"};
+
     switch (a.op) {
-        case Parser::ARROW:
-            if (!is_lvalue(a.arg) || !is_pointer(a.arg->type))
+        case Parser::ARROW: {
+            if(!is_pointer(a.arg->type))
                 throw std::runtime_error{"ERROR: Attempting to use Pointer Reference operator -> on NON-PTR type"};
-            if (!is_struct_pointer(a.arg->type))
-                throw std::runtime_error{"ERROR: Attempting to use Pointer Reference operator -> on NON-STRUCT type"};
-            // NEED SYMBOL TABLE TODO
+            if(!is_struct_pointer(a.arg->type))
+                throw std::runtime_error{"ERROR: Attempting to use Pointer Reference operator -> on NON-STRUCT@ type"};
+            const std::string struct_type = a.arg->type.substr(0, a.arg->type.size() - 1);
+            if (!PROG->struct_defs.contains(struct_type))
+                throw std::runtime_error{"ERROR: De-referencing variable pointer of unknown STRUCT type"};
+            const auto& sd = PROG->struct_defs.at(struct_type);
+            if (!sd->fields.contains(a.id))
+                throw std::runtime_error{"ERROR: Attempting to read undefined field of struct: " + struct_type};
+            a.type = sd->fields.at(a.id)->type;
             break;
-        case Parser::DOT:
-            if (!is_lvalue(a.arg) || !is_struct(a.arg->type))
-                throw std::runtime_error{"ERROR: Attempting to use Struct Reference operator . on NON-STRUCT type"};
-            // NEED SYMBOL TABLE TODO
+        }
+        case Parser::DOT: {
+            if(is_pointer(a.arg->type))
+                throw std::runtime_error{"ERROR: Attempting to use Struct Reference operator . on PTR type"};
+            if (!PROG->struct_defs.contains(a.arg->type))
+                throw std::runtime_error{"ERROR: De-referencing variable struct of unknown STRUCT type"};
+            const auto& sd = PROG->struct_defs.at(a.arg->type);
+            if (!sd->fields.contains(a.id))
+                throw std::runtime_error{"ERROR: Attempting to read undefined field of struct: " + a.arg->type};
+            a.type = sd->fields.at(a.id)->type;
             break;
+        }
         default:
             throw std::runtime_error{"ERROR: Invalid Member Access Operator Found"};
     }

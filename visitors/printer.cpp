@@ -60,7 +60,9 @@ void Printer::visit(struct ProgramNode& a) {
 }
 void Printer::visit(struct StructDefNode& a) {
     print_indent(depth(a), "↪ Struct Definition : " + a.id + '\n');
-    a.fields->accept(*this);
+    for (const auto& [field, dcl] : a.fields) {
+        dcl->accept(*this);
+    }
 }
 void Printer::visit(struct ProcedureNode& a) {
     const size_t indent = depth(a);

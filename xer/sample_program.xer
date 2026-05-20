@@ -61,11 +61,11 @@ main : () -> int { # main
 
 #    bool BAM = guhh();
 
-#    char@ ptr = $c;
+    char@ ptr = $c;
 
-#    print(arr->a);
+    print(arr->a);
 
-#    delete (arr);
+    delete (arr);
 
     return 0;
 }
