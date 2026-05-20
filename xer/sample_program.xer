@@ -59,7 +59,7 @@ main : () -> int { # main
     (arr + 1)->a = 'b';
     (arr + 4)->c = 100 * 5;
 
-#    bool BAM = guhh();
+    bool BAM = guhh();
 
     char@ ptr = $c;
 

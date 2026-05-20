@@ -1,8 +1,6 @@
 #include "typecheck.h"
 #include <sstream>
 
-#include <iostream>
-
 // Helpers
 
 bool is_pointer(const std::string& type) { return type.ends_with('*'); }
@@ -70,6 +68,26 @@ bool is_struct_pointer(const std::string& type) {
     return true;
 }
 
+inline bool is_proc_node(Parser::ParserSymbol ps) {
+    return ps == Parser::MAIN || ps == Parser::procedure;
+}
+
+inline bool is_scopable(Parser::ParserSymbol ps) {
+    return is_proc_node(ps) || ps == Parser::FOR || ps == Parser::WHILE || ps == Parser::IF;
+}
+
+void get_parent_nodes(ASTNode* start, ASTNode** prog = nullptr, ASTNode** proc = nullptr, ASTNode** scope = nullptr) {
+    ASTNode* curr = start;
+    while (curr->parent) {
+        if (proc && !*proc && is_proc_node(curr->node_type)) *proc = curr;
+        if (scope && !*scope && is_scopable(curr->node_type)) *scope = curr;
+        curr = curr->parent;
+    }
+    if (prog) *prog = curr;
+}
+
+// Implementation
+
 void TypeChecker::visit(struct ArgsNode& a) {
     for (auto& arg : a.args) {
         arg->accept(*this);
@@ -78,9 +96,10 @@ void TypeChecker::visit(struct ArgsNode& a) {
     auto* func_call = dynamic_cast<FunctionCallNode*>(a.parent);
     const std::string& id = func_call->id;
 
-    ASTNode* parent = a.parent;
-    while (parent->node_type != Parser::start) parent = parent->parent;
+    ASTNode* parent = nullptr;
+    get_parent_nodes(&a, &parent);
     auto* prog = dynamic_cast<ProgramNode*>(parent);
+
     if (!prog->procedures.contains(id)) throw std::runtime_error{"ERROR: Trying to call undefined procedure: " + id};
     const std::vector<std::unique_ptr<DeclarationNode>>& params = prog->procedures.at(id)->params->declarations;
 
@@ -115,20 +134,14 @@ void TypeChecker::visit(struct MainNode& a) {
 void TypeChecker::visit(struct BlockNode& a) {
     for (auto& statement : a.statements) {
         statement->accept(*this);
+        if (statement->node_type == Parser::RETURN) return;
     }
 }
 void TypeChecker::visit(struct DeclarationNode& a) {
-    ASTNode* proc = a.parent;
+    ASTNode* proc = nullptr;
     ASTNode* scope = nullptr;
-    while (proc && proc->node_type != Parser::procedure && proc->node_type != Parser::MAIN) {
-        if (proc->node_type == Parser::start) return;
-        if (!scope && (proc->node_type == Parser::procedure || proc->node_type == Parser::MAIN ||
-                      proc->node_type == Parser::WHILE || proc->node_type == Parser::FOR)) {
-            scope = proc;
-        }
-        proc = proc->parent;
-    }
-    if (!scope) scope = proc;
+    get_parent_nodes(&a, nullptr, &proc, &scope);
+    if (!proc) return;
     auto* PROC = dynamic_cast<ProcedureNode*>(proc);
 
     std::ostringstream oss;
@@ -158,14 +171,9 @@ void TypeChecker::visit(struct PrintNode& a) {
     // TODO
 }
 void TypeChecker::visit(struct ReturnNode& a) {
-    ASTNode* prog = a.parent;
+    ASTNode* prog = nullptr;
     ASTNode* proc = nullptr;
-    while (prog->parent) {
-        if (!proc && (prog->node_type == Parser::procedure || prog->node_type == Parser::MAIN)) {
-            proc = prog;
-        }
-        prog = prog->parent;
-    }
+    get_parent_nodes(&a, &prog, &proc);
     if (!proc)  throw std::runtime_error{"ERROR: Returning from outside a procedure"};
 
     if (proc->node_type == Parser::procedure) {
@@ -180,7 +188,7 @@ void TypeChecker::visit(struct ReturnNode& a) {
         if (a.expr->type != PROG->procedures.at(PROC->id)->return_type)
             throw std::runtime_error{"ERROR: Returning mismatching type for procedure: " + PROC->id};
     }
-    else {
+    else { // Main Node
         if (!a.expr)
             throw std::runtime_error{"ERROR: Returning nothing for main procedure"};
         a.expr->accept(*this);
@@ -220,21 +228,14 @@ void TypeChecker::visit(struct CharNode& a) {}
 void TypeChecker::visit(struct TrueNode& a) {}
 void TypeChecker::visit(struct FalseNode& a) {}
 void TypeChecker::visit(struct IDNode& a) {
-    ASTNode* prog = a.parent;
+    ASTNode* prog = nullptr;
     ASTNode* proc = nullptr;
     ASTNode* scope = nullptr;
-    while (prog->node_type != Parser::start) {
-        if (!scope && (prog->node_type == Parser::WHILE || prog->node_type == Parser::FOR ||
-                       prog->node_type == Parser::procedure || prog->node_type == Parser::MAIN))
-            scope = prog;
-        if (!proc && (prog->node_type == Parser::procedure || prog->node_type == Parser::MAIN))
-            proc = prog;
-        prog = prog->parent;
-    }
+    get_parent_nodes(&a, &prog, &proc, &scope);
     if (!proc) throw std::runtime_error{"ERROR: Unable to find procedure using variable: " + a.name};
 
     std::ostringstream oss;
-    ProcedureNode* PROC = (proc->node_type == Parser::procedure) ? dynamic_cast<ProcedureNode*>(proc) : dynamic_cast<MainNode*>(proc);
+    auto* PROC = dynamic_cast<ProcedureNode*>(proc);
 
     // Local Scope
     oss << a.name << scope;
@@ -315,8 +316,8 @@ void TypeChecker::visit(struct BinaryExprNode& a) {
 void TypeChecker::visit(struct MemberAccessExprNode& a) {
     a.arg->accept(*this);
 
-    ASTNode* prog = a.parent;
-    while (prog->parent) prog = prog->parent;
+    ASTNode* prog = nullptr;
+    get_parent_nodes(&a, &prog);
     auto* PROG = dynamic_cast<ProgramNode*>(prog);
 
     if (!is_struct(a.arg->type))
@@ -388,12 +389,38 @@ void TypeChecker::visit(struct AllocNode& a) {
     a.type = a.ptr_type;
 }
 void TypeChecker::visit(struct FunctionCallNode& a) {
-    ASTNode* prog = a.parent;
-    while (prog->parent) prog = prog->parent;
+    ASTNode* prog = nullptr;
+    ASTNode* proc = nullptr;
+    ASTNode* scope = nullptr;
+    get_parent_nodes(&a, &prog, &proc, &scope);
     auto* PROG = dynamic_cast<ProgramNode*>(prog);
+    auto* PROC = dynamic_cast<ProcedureNode*>(proc);
+
+    std::ostringstream oss;
+
+    // Check local scope
+    oss << a.id << scope;
+    if (PROC->symbol_table.contains(oss.str()))
+        throw std::runtime_error{"ERROR: Trying to call procedure with same name as local variable: " + a.id};
+    oss.str("");
+
+    // Check procedure scope
+    if (PROC != scope) {
+        oss << a.id << PROC;
+        if (PROC->symbol_table.contains(oss.str()))
+            throw std::runtime_error{"ERROR: Trying to call procedure with same name as procedure variable: " + a.id};
+        oss.str("");
+    }
+
+    // Check global scope
+    oss << a.id << PROG;
+    if (PROG->symbol_table.contains(oss.str()))
+        throw std::runtime_error{"ERROR: Trying to call procedure with same name as global variable: " + a.id};
+
     if (!PROG->procedures.contains(a.id)) throw std::runtime_error{"ERROR: Trying to call undefined procedure: " + a.id};
     a.type = PROG->procedures.at(a.id)->return_type;
-    a.args->accept(*this);
+
+    if (a.args) a.args->accept(*this);
 }
 void TypeChecker::visit(struct ReadCallNode& a) {
     a.type = TYPE_CHAR;

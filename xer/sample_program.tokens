@@ -256,6 +256,13 @@ NUM : 100
 MULT : *
 NUM : 5
 SEMI : ;
+BOOL : bool
+ID : BAM
+BECOMES : =
+ID : guhh
+LPAREN : (
+RPAREN : )
+SEMI : ;
 CHAR : char
 AT : @
 ID : ptr
