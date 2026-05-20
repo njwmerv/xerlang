@@ -241,6 +241,7 @@ struct ForNode : public StatementNode {
 };
 
 struct BreakNode : public StatementNode {
+    ASTNode* loop_target = nullptr;
     BreakNode();
     void accept(Visitor& v) override;
 };

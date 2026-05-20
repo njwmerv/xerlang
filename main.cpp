@@ -6,6 +6,7 @@
 #include "util/types.h"
 
 #include "visitors/printer.h"
+#include "visitors/typecheck.h"
 
 int main(int argc, char* argv[]) {
     // Scanner
@@ -21,6 +22,8 @@ int main(int argc, char* argv[]) {
     std::unique_ptr<ASTNode> root = parse(stream, std::cerr);
 
     // Semantic Analysis
+    TypeChecker tc;
+    root->accept(tc);
     Printer printer;
     root->accept(printer);
 }

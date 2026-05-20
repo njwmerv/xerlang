@@ -265,13 +265,19 @@ void Printer::visit(struct AllocNode& a) {
     print_indent(depth(a), "↪ Allocation: " + a.ptr_type + " [ " + std::to_string(a.size) + " ]\n");
 }
 void Printer::visit(struct FunctionCallNode& a) {
+    ASTNode* prog = a.parent;
+    while (prog->parent) prog = prog->parent;
+    auto* PROG = dynamic_cast<ProgramNode*>(prog);
+
     const size_t indent = depth(a);
-    print_indent(indent, "↪ Function Call: " + a.id + '\n');
+    print_indent(indent, "↪ Function Call: " + a.id + " -> " + PROG->procedures.at(a.id)->return_type + '\n');
 
     if (!a.args) return;
     print_indent(indent + (INDENT >> 1), "> Arguments\n");
     a.args->accept(*this);
 }
 void Printer::visit(struct ReadCallNode& a) {
-    print_indent(depth(a), "↪ Function Call: read\n");
+    std::ostringstream oss;
+    oss << "↪ Function Call: read -> " << TYPE_CHAR << '\n';
+    print_indent(depth(a), oss.str());
 }

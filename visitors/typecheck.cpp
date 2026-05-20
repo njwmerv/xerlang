@@ -7,48 +7,48 @@ bool is_pointer(const std::string& type) { return type.ends_with('*'); }
 
 bool is_lvalue(const std::unique_ptr<ExprNode>& node) {
     switch (node->node_type) {
-        case Parser::ParserSymbol::ID:
-        case Parser::ParserSymbol::DOT:
-        case Parser::ParserSymbol::ARROW:
+        case Parser::ID:
+        case Parser::DOT:
+        case Parser::ARROW:
             return true;
-        case Parser::ParserSymbol::NUM:
-        case Parser::ParserSymbol::CHARLIT:
-        case Parser::ParserSymbol::TRUE:
-        case Parser::ParserSymbol::FALSE:
-        case Parser::ParserSymbol::NIL:
-        case Parser::ParserSymbol::paramlist:
-        case Parser::ParserSymbol::NEW:
+        case Parser::NUM:
+        case Parser::CHARLIT:
+        case Parser::TRUE:
+        case Parser::FALSE:
+        case Parser::NIL:
+        case Parser::paramlist:
+        case Parser::NEW:
             return false;
-        case Parser::ParserSymbol::OR:
-        case Parser::ParserSymbol::AND:
-        case Parser::ParserSymbol::BITOR:
-        case Parser::ParserSymbol::BITXOR:
-        case Parser::ParserSymbol::BITAND:
-        case Parser::ParserSymbol::EQUALS:
-        case Parser::ParserSymbol::NEQ:
-        case Parser::ParserSymbol::LT:
-        case Parser::ParserSymbol::LEQ:
-        case Parser::ParserSymbol::GT:
-        case Parser::ParserSymbol::GEQ:
-        case Parser::ParserSymbol::LSHIFT:
-        case Parser::ParserSymbol::RSHIFT:
-        case Parser::ParserSymbol::PLUS:
-        case Parser::ParserSymbol::SUB:
-        case Parser::ParserSymbol::MULT:
-        case Parser::ParserSymbol::DIV:
-        case Parser::ParserSymbol::MOD:
-        case Parser::ParserSymbol::EXP: {
+        case Parser::OR:
+        case Parser::AND:
+        case Parser::BITOR:
+        case Parser::BITXOR:
+        case Parser::BITAND:
+        case Parser::EQUALS:
+        case Parser::NEQ:
+        case Parser::LT:
+        case Parser::LEQ:
+        case Parser::GT:
+        case Parser::GEQ:
+        case Parser::LSHIFT:
+        case Parser::RSHIFT:
+        case Parser::PLUS:
+        case Parser::SUB:
+        case Parser::MULT:
+        case Parser::DIV:
+        case Parser::MOD:
+        case Parser::EXP: {
             auto* bn = dynamic_cast<BinaryExprNode*>(node.get());
             return is_lvalue(bn->LHS) || is_lvalue(bn->RHS);
         }
-        case Parser::ParserSymbol::AT:
-        case Parser::ParserSymbol::ADDR:
-        case Parser::ParserSymbol::NOT:
-        case Parser::ParserSymbol::BITNOT:
-        case Parser::ParserSymbol::INCR:
-        case Parser::ParserSymbol::DECR:
-        case Parser::ParserSymbol::expr3:
-        case Parser::ParserSymbol::expr4: {
+        case Parser::AT:
+        case Parser::ADDR:
+        case Parser::NOT:
+        case Parser::BITNOT:
+        case Parser::INCR:
+        case Parser::DECR:
+        case Parser::expr3:
+        case Parser::expr4: {
             auto* un = dynamic_cast<UnaryExprNode*>(node.get());
             return is_lvalue(un->arg);
         }
@@ -57,10 +57,12 @@ bool is_lvalue(const std::unique_ptr<ExprNode>& node) {
     }
 }
 
-bool is_struct(const std::string& type) { return type.starts_with("struct"); }
+bool is_struct(const std::string& type) {
+    return !type.starts_with(TYPE_INT) && !type.starts_with(TYPE_CHAR) && !type.starts_with(TYPE_BOOL);
+}
 
 bool is_struct_pointer(const std::string& type) {
-    if (!type.starts_with("struct")) return false;
+    if (!is_struct(type)) return false;
     const char secondLast = *std::next(type.rbegin());
     if (secondLast == '*') return false;
     return true;
@@ -75,7 +77,7 @@ void TypeChecker::visit(struct ArgsNode& a) {
     const std::string& id = func_call->id;
 
     ASTNode* parent = a.parent;
-    while (parent->node_type != Parser::ParserSymbol::start) parent = parent->parent;
+    while (parent->node_type != Parser::start) parent = parent->parent;
     auto* prog = dynamic_cast<ProgramNode*>(parent);
     if (!prog->procedures.contains(id)) throw std::runtime_error{"ERROR: Trying to call undefined procedure: " + id};
     const std::vector<std::unique_ptr<DeclarationNode>>& params = prog->procedures.at(id)->params->declarations;
@@ -115,10 +117,9 @@ void TypeChecker::visit(struct BlockNode& a) {
 }
 void TypeChecker::visit(struct DeclarationNode& a) {}
 void TypeChecker::visit(struct VarInitNode& a) {
-    if (a.val) {
-        a.val->accept(*this);
-        if (a.dcl->type != a.val->type) throw std::runtime_error{"ERROR: Trying to initialize mismatching values"};
-    }
+    if (!a.val) return;
+    a.val->accept(*this);
+    if (a.dcl->type != a.val->type) throw std::runtime_error{"ERROR: Trying to initialize mismatching values"};
 }
 void TypeChecker::visit(struct IfNode& a) {
     for (auto& clause : a.clauses) {
@@ -134,18 +135,34 @@ void TypeChecker::visit(struct PrintNode& a) {
     // TODO
 }
 void TypeChecker::visit(struct ReturnNode& a) {
-    if (!a.expr) return;
-    a.expr->accept(*this);
     ASTNode* prog = a.parent;
     ASTNode* proc = nullptr;
-    while (prog && prog->node_type != Parser::ParserSymbol::start) {
-        if (!proc && prog->node_type == Parser::ParserSymbol::procedure) proc = prog;
+    while (prog->parent) {
+        if (!proc && (prog->node_type == Parser::procedure || prog->node_type == Parser::MAIN)) {
+            proc = prog;
+        }
         prog = prog->parent;
     }
-    auto* PROG = dynamic_cast<ProgramNode*>(prog);
-    auto* PROC = dynamic_cast<ProcedureNode*>(proc);
-    if (a.expr->type != PROG->procedures.at(PROC->id)->return_type) {
-        throw std::runtime_error{"ERROR: Returning invalid value for procedure: " + PROC->id};
+    if (!proc)  throw std::runtime_error{"ERROR: Returning from outside a procedure"};
+
+    if (proc->node_type == Parser::procedure) {
+        auto* PROG = dynamic_cast<ProgramNode*>(prog);
+        auto* PROC = dynamic_cast<ProcedureNode*>(proc);
+        if (!a.expr && PROG->procedures.at(PROC->id)->return_type != "void")
+            throw std::runtime_error{"ERROR: Returning nothing for NON-VOID procedure: " + PROC->id};
+        if (!a.expr) return;
+        if (PROG->procedures.at(PROC->id)->return_type == "void")
+            throw std::runtime_error{"ERROR: Returning something for VOID function: " + PROC->id};
+        a.expr->accept(*this);
+        if (a.expr->type != PROG->procedures.at(PROC->id)->return_type)
+            throw std::runtime_error{"ERROR: Returning mismatching type for procedure: " + PROC->id};
+    }
+    else {
+        if (!a.expr)
+            throw std::runtime_error{"ERROR: Returning nothing for main procedure"};
+        a.expr->accept(*this);
+        if (a.expr->type != TYPE_INT)
+            throw std::runtime_error{"ERROR: Returning NON-INT type for INT procedure: main"};
     }
 }
 void TypeChecker::visit(struct WhileNode& a) {
@@ -163,40 +180,47 @@ void TypeChecker::visit(struct ForNode& a) {
     a.prologue->accept(*this);
     a.block->accept(*this);
 }
-void TypeChecker::visit(struct BreakNode& a) {}
-void TypeChecker::visit(struct NumNode& a) {
-    a.type = TYPE_INT;
+void TypeChecker::visit(struct BreakNode& a) {
+    ASTNode* parent = a.parent;
+    while (parent) {
+        if (parent->node_type == Parser::FOR || parent->node_type == Parser::WHILE) {
+            a.loop_target = parent;
+            break;
+        }
+    }
+    if (!a.loop_target) throw std::runtime_error{"ERROR: Using BREAK statement outside of for/while-loop body"};
 }
-void TypeChecker::visit(struct CharNode& a) {
-    a.type = TYPE_CHAR;
-}
-void TypeChecker::visit(struct TrueNode& a) {
-    a.type = TYPE_BOOL;
-}
-void TypeChecker::visit(struct FalseNode& a) {
-    a.type = TYPE_BOOL;
-}
+void TypeChecker::visit(struct NumNode& a) {}
+void TypeChecker::visit(struct CharNode& a) {}
+void TypeChecker::visit(struct TrueNode& a) {}
+void TypeChecker::visit(struct FalseNode& a) {}
 void TypeChecker::visit(struct IDNode& a) {
     ASTNode* prog = a.parent;
     ASTNode* proc = nullptr;
     ASTNode* scope = nullptr;
-    while (prog->node_type != Parser::ParserSymbol::start) {
-        if (!scope && (prog->node_type == Parser::ParserSymbol::WHILE || prog->node_type == Parser::ParserSymbol::FOR ||
-                       prog->node_type == Parser::ParserSymbol::procedure))
+    while (prog->node_type != Parser::start) {
+        if (!scope && (prog->node_type == Parser::WHILE || prog->node_type == Parser::FOR ||
+                       prog->node_type == Parser::procedure))
             scope = prog;
-        if (!proc && prog->node_type == Parser::ParserSymbol::procedure)
+        if (!proc && prog->node_type == Parser::procedure)
             proc = prog;
         prog = prog->parent;
     }
+
     std::ostringstream oss;
     oss << a.name << scope;
     auto* PROC = dynamic_cast<ProcedureNode*>(proc);
     if (PROC->symbol_table.contains(oss.str()) && PROC->symbol_table.at(oss.str()).scope == scope) {
         a.type = PROC->symbol_table.at(oss.str()).type;
+        return;
     }
+
     auto* PROG = dynamic_cast<ProgramNode*>(prog);
+    oss.str("");
+    oss << a.name << PROG;
     if (PROG->symbol_table.contains(oss.str())) {
         a.type = PROG->symbol_table.at(oss.str()).type;
+        return;
     }
     throw std::runtime_error{"ERROR: Unidentified variable: " + a.name};
 }
@@ -269,14 +293,14 @@ void TypeChecker::visit(struct MemberAccessExprNode& a) {
     }
 }
 void TypeChecker::visit(struct UnaryExprNode& a) {
-    a.accept(*this);
+    a.arg->accept(*this);
     switch (a.op) {
         case Parser::NOT:
             if (a.arg->type != TYPE_BOOL) throw std::runtime_error{"ERROR: Attempting to use BOOL operator ! on NON-BOOL type"};
             a.type = TYPE_BOOL;
             break;
-        case Parser::PLUS:
-        case Parser::SUB:
+        case Parser::expr3:
+        case Parser::expr4:
         case Parser::BITNOT:
             if (a.arg->type != TYPE_INT) throw std::runtime_error{"ERROR: Invalid Unary Expression Operator used on NON-INT type"};
             a.type = a.arg->type;
@@ -304,8 +328,13 @@ void TypeChecker::visit(struct AllocNode& a) {
     a.type = a.ptr_type;
 }
 void TypeChecker::visit(struct FunctionCallNode& a) {
-    // TODO
+    ASTNode* prog = a.parent;
+    while (prog->parent) prog = prog->parent;
+    auto* PROG = dynamic_cast<ProgramNode*>(prog);
+    if (!PROG->procedures.contains(a.id)) throw std::runtime_error{"ERROR: Trying to call undefined procedure: " + a.id};
+    a.type = PROG->procedures.at(a.id)->return_type;
+    a.args->accept(*this);
 }
 void TypeChecker::visit(struct ReadCallNode& a) {
-    // TODO
+    a.type = TYPE_CHAR;
 }
