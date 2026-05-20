@@ -175,10 +175,10 @@ void Printer::visit(struct AssignmentNode& a) {
     const size_t indent = depth(a);
     print_indent(indent, "↪ Assignment\n");
 
-     print_indent(indent + (INDENT >> 1), "> LValue\n");
+    print_indent(indent + (INDENT >> 1), "> LValue\n");
     a.LHS->accept(*this);
 
-     print_indent(indent + (INDENT >> 1), "> New Value\n");
+    print_indent(indent + (INDENT >> 1), "> New Value\n");
     a.RHS->accept(*this);
 }
 void Printer::visit(struct ForNode& a) {
@@ -225,7 +225,9 @@ void Printer::visit(struct NilNode& a) {
 void Printer::visit(struct BinaryExprNode& a) {
     const size_t indent = depth(a);
     std::ostringstream oss;
-    oss << "↪ Binary Expression: " << a.op << '\n';
+    oss << "↪ Binary Expression: " << a.op;
+    if (!a.type.empty()) oss << " : " << a.type;
+    oss << '\n';
     print_indent(indent, oss.str());
 
     // print_indent(indent + (INDENT >> 1), "> Left Side\n");
@@ -237,7 +239,9 @@ void Printer::visit(struct BinaryExprNode& a) {
 void Printer::visit(struct MemberAccessExprNode& a) {
     const size_t indent = depth(a);
     std::ostringstream oss;
-    oss << "↪ Member Access: " << a.op << '\n';
+    oss << "↪ Member Access: " << a.op;
+    if (!a.type.empty()) oss << " : " << a.type;
+    oss << '\n';
     print_indent(indent, oss.str());
 
     // print_indent(indent + (INDENT >> 1), "> Argument\n");
@@ -249,7 +253,9 @@ void Printer::visit(struct MemberAccessExprNode& a) {
 void Printer::visit(struct UnaryExprNode& a) {
     const size_t indent = depth(a);
     std::ostringstream oss;
-    oss << "↪ Unary Expression: " << a.op << '\n';
+    oss << "↪ Unary Expression: " << a.op;
+    if (!a.type.empty()) oss << " : " << a.type;
+    oss << '\n';
     print_indent(indent, oss.str());
 
     // print_indent(indent + (INDENT >> 1), "> Argument\n");
