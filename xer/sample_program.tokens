@@ -109,6 +109,14 @@ READ : read
 LPAREN : (
 RPAREN : )
 SEMI : ;
+IF : if
+LPAREN : (
+ID : x
+EQUALS : ==
+CHARLIT : 'a'
+RPAREN : )
+LCURLY : {
+RCURLY : }
 STRUCT : struct
 ID : Data
 AT : @

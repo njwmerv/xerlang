@@ -123,7 +123,7 @@ void TypeChecker::visit(struct VarInitNode& a) {
 }
 void TypeChecker::visit(struct IfNode& a) {
     for (auto& clause : a.clauses) {
-        clause.cond->accept(*this);
+        if (clause.cond) clause.cond->accept(*this);
         clause.block->accept(*this);
     }
 }
@@ -200,16 +200,18 @@ void TypeChecker::visit(struct IDNode& a) {
     ASTNode* scope = nullptr;
     while (prog->node_type != Parser::start) {
         if (!scope && (prog->node_type == Parser::WHILE || prog->node_type == Parser::FOR ||
-                       prog->node_type == Parser::procedure))
+                       prog->node_type == Parser::procedure || prog->node_type == Parser::MAIN))
             scope = prog;
-        if (!proc && prog->node_type == Parser::procedure)
+        if (!proc && (prog->node_type == Parser::procedure || prog->node_type == Parser::MAIN))
             proc = prog;
         prog = prog->parent;
     }
 
     std::ostringstream oss;
     oss << a.name << scope;
-    auto* PROC = dynamic_cast<ProcedureNode*>(proc);
+
+    if (!proc) throw std::runtime_error{"ERROR: Unable to find procedure using variable: " + a.name};
+    ProcedureNode* PROC = (proc->node_type == Parser::procedure) ? dynamic_cast<ProcedureNode*>(proc) : dynamic_cast<MainNode*>(proc);
     if (PROC->symbol_table.contains(oss.str()) && PROC->symbol_table.at(oss.str()).scope == scope) {
         a.type = PROC->symbol_table.at(oss.str()).type;
         return;
