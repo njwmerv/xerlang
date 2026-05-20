@@ -275,7 +275,7 @@ void Printer::visit(struct FunctionCallNode& a) {
     print_indent(indent, "↪ Function Call: " + a.id + " -> " + PROG->procedures.at(a.id)->return_type + '\n');
 
     if (!a.args) return;
-    print_indent(indent + (INDENT >> 1), "> Arguments\n");
+//    print_indent(indent + (INDENT >> 1), "> Arguments\n");
     a.args->accept(*this);
 }
 void Printer::visit(struct ReadCallNode& a) {

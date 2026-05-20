@@ -168,7 +168,10 @@ void TypeChecker::visit(struct DeleteNode& a) {
     if (!is_pointer(a.ptr->type)) throw std::runtime_error{"ERROR: Trying to delete on NON-PTR type"};
 }
 void TypeChecker::visit(struct PrintNode& a) {
-    // TODO
+    for (auto& arg : a.args->args) {
+        arg->accept(*this);
+        if (is_struct(arg->type)) throw std::runtime_error{"ERROR: Trying to print STRUCT type"};
+    }
 }
 void TypeChecker::visit(struct ReturnNode& a) {
     ASTNode* prog = nullptr;
