@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <memory>
 #include "../util/types.h"
+#include "symbol_table.h"
 
 //// Base Classes
 
@@ -48,7 +49,7 @@ struct StructDefNode : public ASTNode {
 
 struct ProcedureNode : public ASTNode {
     std::string id;
-    std::unordered_map<std::string, SymbolTableEntry> symbol_table;
+    SymbolTable symbol_table;
     std::unique_ptr<DeclarationsNode> params;
     std::unique_ptr<BlockNode> block;
     std::string return_type;
@@ -68,6 +69,7 @@ struct ProgramNode : public ASTNode {
     std::unordered_map<std::string, std::unique_ptr<ProcedureNode>> procedures;
     std::unique_ptr<MainNode> main;
     std::unordered_map<std::string, SymbolTableEntry> symbol_table;
+    std::unordered_map<std::string, int> type_sizes;
     ProgramNode();
     void accept(Visitor& v) override;
 };
@@ -119,6 +121,7 @@ struct FalseNode : public ExprNode {
 
 struct IDNode : public ExprNode {
     const std::string name;
+    int offset = 1;
     IDNode(std::string lexeme);
     void accept(Visitor& v) override;
 };
@@ -174,9 +177,10 @@ struct ReadCallNode : public FunctionCallNode {
 // Statements
 
 struct DeclarationNode : public StatementNode {
-    std::string type;
     std::string id;
-    DeclarationNode(std::string type, std::string id);
+    std::string type;
+    int frame_offset = 0;
+    DeclarationNode(std::string id, std::string type);
     void accept(Visitor& v) override;
 };
 

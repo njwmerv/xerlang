@@ -31,18 +31,23 @@ main : () -> int { # main
 
     if (c == 'a') {
         print(c);
+        int a = 5;
     }
     elif (is_capitalized(c)) {
-        int x = 5;
+        int b = 5;
         print(x);
     }
     else {
+        int c = 50;
         for (int i = 0; i < 10; i++) {
+            int d = 100;
             print(i);
         }
-        while (c != 'a') {
+        while (c != 5) {
+            int e = 500;
             print(c);
-            if (c == a) {
+            if (c) {
+                int f = c + e;
                 break;
             }
         }
@@ -65,7 +70,8 @@ main : () -> int { # main
 
     print(arr->a);
 
-    delete (arr);
+    delete (arr); # NOTE: ( ... ) isn't needed for delete
+    delete arr;
 
     return 0;
 }

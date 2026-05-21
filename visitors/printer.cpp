@@ -1,6 +1,7 @@
 #include "printer.h"
 #include <iostream>
 #include <sstream>
+#include "visitor_helper.h"
 
 #define INDENT 4
 
@@ -19,7 +20,7 @@ void print_indent(size_t indent, const std::string& message) {
 }
 
 inline void print_STE(size_t indent, const SymbolTableEntry& STE) {
-    print_indent(indent + INDENT, "> " + STE.id + " : " + STE.type + '\n');
+    print_indent(indent + INDENT, "> " + STE.id + " : " + STE.type + " : " + std::to_string(STE.frame_offset) + '\n');
 }
 
 // Implementation
@@ -44,6 +45,11 @@ void Printer::visit(struct ProgramNode& a) {
 
     print_indent(indent + (INDENT >> 1), "> Struct Definitions\n");
     for (auto& [type, sd] : a.struct_defs) sd->accept(*this);
+
+    print_indent(indent + (INDENT >> 1), "> Type Sizes\n");
+    for (auto& [type, size] : a.type_sizes) {
+        print_indent(indent + INDENT, "> " + type + " : " + std::to_string(size) + " b\n");
+    }
 
     print_indent(indent + (INDENT >> 1), "> Global Vars\n");
     for (auto& gv : a.global_vars) gv->accept(*this);
@@ -75,7 +81,7 @@ void Printer::visit(struct ProcedureNode& a) {
     }
 
     print_indent(indent + (INDENT >> 1), "> Symbol Table\n");
-    for (auto& [name, STE] : a.symbol_table) {
+    for (auto& STE : a.symbol_table.see_syms()) {
         print_STE(indent, STE);
     }
 
@@ -87,7 +93,7 @@ void Printer::visit(struct MainNode& a) {
     print_indent(indent, "↪ Main: main\n");
 
     print_indent(indent + (INDENT >> 1), "> Symbol Table\n");
-    for (auto& [name, STE] : a.symbol_table) {
+    for (auto& STE : a.symbol_table.see_syms()) {
         print_STE(indent, STE);
     }
 
@@ -219,7 +225,7 @@ void Printer::visit(struct FalseNode& a) {
 void Printer::visit(struct IDNode& a) {
     print_indent(depth(a), "↪ ID : " + a.name);
     if (!a.type.empty()) std::cout << " : " << a.type;
-    std::cout << '\n';
+    std::cout << " : " << a.offset << '\n';
 }
 void Printer::visit(struct NilNode& a) {
     print_indent(depth(a), "↪ Pointer : NULL\n");
@@ -267,8 +273,8 @@ void Printer::visit(struct AllocNode& a) {
     print_indent(depth(a), "↪ Allocation: " + a.ptr_type + " [ " + std::to_string(a.size) + " ]\n");
 }
 void Printer::visit(struct FunctionCallNode& a) {
-    ASTNode* prog = a.parent;
-    while (prog->parent) prog = prog->parent;
+    ASTNode* prog = nullptr;
+    get_parent_nodes(&a, &prog);
     auto* PROG = dynamic_cast<ProgramNode*>(prog);
 
     const size_t indent = depth(a);

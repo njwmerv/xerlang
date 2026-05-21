@@ -30,11 +30,16 @@ ProcedureNode::ProcedureNode(std::string id, std::string return_type, std::uniqu
       block{std::move(block)}, return_type{std::move(return_type)} {}
 
 MainNode::MainNode(std::unique_ptr<BlockNode> b)
-    : ProcedureNode{"main", "int", nullptr, std::move(b), Parser::ParserSymbol::MAIN} {}
+    : ProcedureNode{"main", TYPE_INT, nullptr, std::move(b), Parser::ParserSymbol::MAIN} {}
 
 ProgramNode::ProgramNode()
     : ASTNode{Parser::ParserSymbol::start}, struct_defs{}, global_vars{}, procedures{}, main{nullptr},
-      symbol_table{} {}
+      symbol_table{}, type_sizes{} {
+    type_sizes.insert({TYPE_INT, SIZE_INT});
+    type_sizes.insert({TYPE_CHAR, SIZE_CHAR});
+    type_sizes.insert({TYPE_BOOL, SIZE_BOOL});
+    type_sizes.insert({"*", SIZE_PTR});
+}
 
 BlockNode::BlockNode() : ASTNode{Parser::ParserSymbol::statements}, statements{} {}
 
@@ -50,18 +55,18 @@ ExprNode::ExprNode(std::string type, Parser::ParserSymbol node_type)
     : StatementNode{node_type}, type{std::move(type)} {}
 
 NumNode::NumNode(const std::string& lexeme)
-    : ExprNode{"int", Parser::ParserSymbol::NUM}, val{std::stoi(lexeme)} {}
+    : ExprNode{TYPE_INT, Parser::ParserSymbol::NUM}, val{std::stoi(lexeme)} {}
 
 CharNode::CharNode(const std::string& lexeme)
-    : ExprNode{"char", Parser::ParserSymbol::CHARLIT},
+    : ExprNode{TYPE_CHAR, Parser::ParserSymbol::CHARLIT},
       val{(lexeme.size() == 3) ? lexeme.at(1) : lexeme.at(2)} {}
 
-TrueNode::TrueNode() : ExprNode{"bool", Parser::ParserSymbol::TRUE}, val{true} {}
+TrueNode::TrueNode() : ExprNode{TYPE_BOOL, Parser::ParserSymbol::TRUE}, val{true} {}
 
-FalseNode::FalseNode() : ExprNode{"bool", Parser::ParserSymbol::FALSE}, val{false} {}
+FalseNode::FalseNode() : ExprNode{TYPE_BOOL, Parser::ParserSymbol::FALSE}, val{false} {}
 
 IDNode::IDNode(std::string lexeme)
-    : ExprNode{Parser::ParserSymbol::ID}, name{std::move(lexeme)} {}
+    : ExprNode{Parser::ParserSymbol::ID}, name{std::move(lexeme)}, offset{1} {}
 
 NilNode::NilNode() : ExprNode{"*", Parser::ParserSymbol::NIL} {}
 
@@ -88,8 +93,8 @@ ReadCallNode::ReadCallNode() : FunctionCallNode{"read", nullptr, Parser::ParserS
 
 // Statements
 
-DeclarationNode::DeclarationNode(std::string type, std::string id)
-    : StatementNode{Parser::ParserSymbol::dcl}, type{std::move(type)}, id{std::move(id)} {}
+DeclarationNode::DeclarationNode(std::string id, std::string type)
+    : StatementNode{Parser::ParserSymbol::dcl}, id{std::move(id)}, type{std::move(type)}, frame_offset{0} {}
 
 VarInitNode::VarInitNode(std::unique_ptr<DeclarationNode> dcl)
     : StatementNode{Parser::ParserSymbol::expr2}, dcl{std::move(dcl)}, val{nullptr} {}

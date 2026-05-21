@@ -1,6 +1,5 @@
 #include "parser.h"
 #include <iostream>
-#include <sstream>
 #include <vector>
 #include <memory>
 #include "parser_constants.h"
@@ -177,10 +176,8 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                             auto program = unique_ptr_cast<ProgramNode>(RHS.back());
                             auto var_init = std::make_unique<VarInitNode>(unique_ptr_cast<DeclarationNode>(RHS.front()));
 
-                            SymbolTableEntry ste{.id = var_init->dcl->id, .type = var_init->dcl->type, .scope = program.get()};
-                            std::ostringstream oss;
-                            oss << ste.id << ste.scope;
-                            program->symbol_table.insert({oss.str(), ste});
+                            SymbolTableEntry ste{.id = var_init->dcl->id, .type = var_init->dcl->type};
+                            program->symbol_table.insert({ste.id, std::move(ste)});
 
                             program->global_vars.insert(program->global_vars.begin(), std::move(var_init));
                             program->global_vars.front()->parent = program.get();
@@ -195,10 +192,8 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                             init->val->parent = init.get();
                             init->parent = program.get();
 
-                            SymbolTableEntry ste{.id = init->dcl->id, .type = init->dcl->type, .scope = program.get()};
-                            std::ostringstream oss;
-                            oss << ste.id << ste.scope;
-                            program->symbol_table.insert({oss.str(), ste});
+                            SymbolTableEntry ste{.id = init->dcl->id, .type = init->dcl->type};
+                            program->symbol_table.insert({ste.id, std::move(ste)});
 
                             program->global_vars.insert(program->global_vars.begin(), std::move(init));
                             new_node = std::move(program);
@@ -208,6 +203,7 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                             auto sd = unique_ptr_cast<StructDefNode>(RHS.front());
                             auto program = unique_ptr_cast<ProgramNode>(RHS.back());
                             const std::string id = sd->id;
+                            if (program->struct_defs.contains(id)) throw std::runtime_error{"ERROR: Redefinition of struct: " + id};
                             program->struct_defs.insert({id, std::move(sd)});
                             program->struct_defs.at(id)->parent = program.get();
                             new_node = std::move(program);
@@ -247,14 +243,6 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                             }
                             proc->params->parent = proc.get();
                             proc->block->parent = proc.get();
-
-                            for (auto& dcl : proc->params->declarations) {
-                                SymbolTableEntry ste{.id = dcl->id, .type = dcl->type, .scope = proc.get(), .is_param = true};
-                                std::ostringstream oss;
-                                oss << ste.id << ste.scope;
-                                proc->symbol_table.insert({oss.str(), ste});
-                            }
-
                             new_node = std::move(proc);
                             break;
                         }
@@ -301,7 +289,7 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                             break;
                         }
                         case dcl_typeID: {
-                            new_node = std::make_unique<DeclarationNode>(unique_ptr_cast<TypeNode>(RHS.front())->lexeme, RHS.back().token.lexeme);
+                            new_node = std::make_unique<DeclarationNode>(RHS.back().token.lexeme, unique_ptr_cast<TypeNode>(RHS.front())->lexeme);
                             break;
                         }
                         case type_INTstar:
