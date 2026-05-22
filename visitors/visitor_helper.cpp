@@ -2,7 +2,7 @@
 #include <memory>
 #include "../parser/ast.h"
 
-inline bool is_pointer(const std::string& type) { return type.ends_with('*'); }
+bool is_pointer(const std::string& type) { return type.ends_with('*'); }
 
 bool is_lvalue(const std::unique_ptr<ExprNode>& node) {
     switch (node->node_type) {
@@ -56,7 +56,7 @@ bool is_lvalue(const std::unique_ptr<ExprNode>& node) {
     }
 }
 
-inline bool is_struct(const std::string& type) {
+bool is_struct(const std::string& type) {
     return !type.starts_with(TYPE_INT) && !type.starts_with(TYPE_CHAR) && !type.starts_with(TYPE_BOOL);
 }
 
@@ -67,7 +67,7 @@ bool is_struct_pointer(const std::string& type) {
     return true;
 }
 
-inline bool is_proc_node(Parser::ParserSymbol ps) {
+bool is_proc_node(Parser::ParserSymbol ps) {
     return ps == Parser::MAIN || ps == Parser::procedure;
 }
 
