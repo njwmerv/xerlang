@@ -125,8 +125,8 @@ struct ASTNode {
 #define TYPE_CHAR "char"
 #define TYPE_BOOL "bool"
 #define SIZE_INT 4
-#define SIZE_CHAR 4
-#define SIZE_BOOL 4
+#define SIZE_CHAR 1
+#define SIZE_BOOL 1
 #define SIZE_PTR sizeof(void*)
 
 struct Visitor {

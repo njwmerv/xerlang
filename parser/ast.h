@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 #include <memory>
+#include <map>
 #include "../util/types.h"
 #include "symbol_table.h"
 
@@ -42,7 +43,7 @@ struct ForPrologueNode : public ASTNode {
 
 struct StructDefNode : public ASTNode {
     const std::string id;
-    std::unordered_map<std::string, std::unique_ptr<DeclarationNode>> fields;
+    std::map<std::string, std::unique_ptr<DeclarationNode>> fields;
     StructDefNode(std::string id);
     void accept(Visitor& v) override;
 };

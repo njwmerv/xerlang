@@ -23,6 +23,7 @@ struct Data {
     char a;
     char b;
     int c;
+    char d;
 };
 
 # just want to annotate some code here...
@@ -32,21 +33,27 @@ main : () -> int { # main
     if (c == 'a') {
         print(c);
         int a = 5;
+        int x;
     }
     elif (is_capitalized(c)) {
         int b = 5;
         print(x);
+        int x;
     }
     else {
         int c = 50;
+        int x;
         for (int i = 0; i < 10; i++) {
             int d = 100;
+            int x;
             print(i);
         }
         while (c != 5) {
+            int x;
             int e = 500;
             print(c);
             if (c) {
+                int x;
                 int f = c + e;
                 break;
             }

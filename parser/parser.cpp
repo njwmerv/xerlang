@@ -214,6 +214,7 @@ std::unique_ptr<ASTNode> parse(const std::vector<Token>& stream, std::ostream& e
                             auto sd = std::make_unique<StructDefNode>(RHS.at(1).token.lexeme);
 
                             for (auto& dcl : dcls->declarations) {
+                                if (sd->fields.contains(dcl->id)) throw std::runtime_error{"ERROR: Redefinition of struct field: " + dcl->id};
                                 dcl->parent = sd.get();
                                 sd->fields.insert({dcl->id, std::move(dcl)});
                             }

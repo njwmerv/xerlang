@@ -106,7 +106,7 @@ void Printer::visit(struct BlockNode& a) {
     for (auto& s : a.statements) s->accept(*this);
 }
 void Printer::visit(struct DeclarationNode& a) {
-    print_indent(depth(a), "↪ Declaration: " + a.id + " : " + a.type + '\n');
+    print_indent(depth(a), "↪ Declaration: " + a.id + " : " + a.type + " : " + std::to_string(a.frame_offset) + '\n');
 }
 void Printer::visit(struct VarInitNode& a) {
     const size_t indent = depth(a);

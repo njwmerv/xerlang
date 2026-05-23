@@ -21,6 +21,8 @@ void SymbolTable::declare_variable(const std::string& id, const std::string& typ
     if (current_scope.find(id) != current_scope.end())
         throw std::runtime_error{"ERROR: Redefining variable: " + id};
 
+    if (size >= SIZE_INT) current_stack_offset = (current_stack_offset + (SIZE_INT-1)) & ~(SIZE_INT-1);
+
     current_stack_offset -= size;
 
     current_scope.insert({id, {.id = id, .type = type, .frame_offset = current_stack_offset}});

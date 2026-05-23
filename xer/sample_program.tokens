@@ -93,6 +93,9 @@ SEMI : ;
 INT : int
 ID : c
 SEMI : ;
+CHAR : char
+ID : d
+SEMI : ;
 RCURLY : }
 SEMI : ;
 MAIN : main
@@ -126,6 +129,9 @@ ID : a
 BECOMES : =
 NUM : 5
 SEMI : ;
+INT : int
+ID : x
+SEMI : ;
 RCURLY : }
 ELIF : elif
 LPAREN : (
@@ -145,6 +151,9 @@ LPAREN : (
 ID : x
 RPAREN : )
 SEMI : ;
+INT : int
+ID : x
+SEMI : ;
 RCURLY : }
 ELSE : else
 LCURLY : {
@@ -152,6 +161,9 @@ INT : int
 ID : c
 BECOMES : =
 NUM : 50
+SEMI : ;
+INT : int
+ID : x
 SEMI : ;
 FOR : for
 LPAREN : (
@@ -173,6 +185,9 @@ ID : d
 BECOMES : =
 NUM : 100
 SEMI : ;
+INT : int
+ID : x
+SEMI : ;
 PRINT : print
 LPAREN : (
 ID : i
@@ -186,6 +201,9 @@ NEQ : !=
 NUM : 5
 RPAREN : )
 LCURLY : {
+INT : int
+ID : x
+SEMI : ;
 INT : int
 ID : e
 BECOMES : =
@@ -201,6 +219,9 @@ LPAREN : (
 ID : c
 RPAREN : )
 LCURLY : {
+INT : int
+ID : x
+SEMI : ;
 INT : int
 ID : f
 BECOMES : =

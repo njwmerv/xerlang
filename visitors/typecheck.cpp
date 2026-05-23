@@ -54,11 +54,14 @@ void TypeChecker::visit(struct StructDefNode& a) {
 
     int size = 0;
     for (auto& [id, dcl] : a.fields) {
-        if (!sizes.contains(dcl->type))
+        if (!sizes.contains(dcl->type) && !is_pointer(dcl->type))
             throw std::runtime_error{"ERROR: Undefined type used in definition of struct: " + a.id};
-        size += sizes.at(dcl->type);
+        const int dcl_size = is_pointer(dcl->type) ? sizes.at("*") : sizes.at(dcl->type);
+        if (dcl_size >= SIZE_INT) size = (size + (SIZE_INT-1)) & ~(SIZE_INT-1);
         dcl->frame_offset = -size;
+        size += dcl_size;
     }
+    size = (size + 3) & ~3;
     sizes.insert({a.id, size});
 }
 void TypeChecker::visit(struct ProcedureNode& a) {

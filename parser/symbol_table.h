@@ -2,13 +2,13 @@
 #define SYMBOLTABLE_H
 
 #include <string>
-#include <unordered_map>
 #include <vector>
+#include <map>
 #include "util/types.h"
 
 class SymbolTable {
     int current_stack_offset = 0;
-    std::vector<std::unordered_map<std::string, SymbolTableEntry>> scopes;
+    std::vector<std::map<std::string, SymbolTableEntry>> scopes;
     std::vector<SymbolTableEntry> all_syms;
 
 public:
