@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
     // Semantic Analysis
     try {
         TypeChecker tc;
-        root->accept(tc);
+        root->accept(tc, std::cout);
     }
     catch (std::exception& e) {
         std::cerr << "ERROR: Typechecker: " << e.what() << '\n';
@@ -116,7 +116,8 @@ int main(int argc, char* argv[]) {
     }
     if (flags & SEMANTIC_ONLY) {
         Printer printer;
-        root->accept(printer);
+        std::ofstream xerp{file_root + ".xerp"};
+        root->accept(printer, xerp);
         return 0;
     }
 

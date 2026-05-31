@@ -5,36 +5,36 @@
 #include "../util/types.h"
 
 struct TypeChecker : public Visitor {
-    void visit(struct ArgsNode&) override;
-    void visit(struct DeclarationsNode&) override;
-    void visit(struct ForPrologueNode&) override;
-    void visit(struct ProgramNode&) override;
-    void visit(struct StructDefNode&) override;
-    void visit(struct ProcedureNode&) override;
-    void visit(struct MainNode&) override;
-    void visit(struct BlockNode&) override;
-    void visit(struct DeclarationNode&) override;
-    void visit(struct VarInitNode&) override;
-    void visit(struct IfNode&) override;
-    void visit(struct DeleteNode&) override;
-    void visit(struct PrintNode&) override;
-    void visit(struct ReturnNode&) override;
-    void visit(struct WhileNode&) override;
-    void visit(struct AssignmentNode&) override;
-    void visit(struct ForNode&) override;
-    void visit(struct BreakNode&) override;
-    void visit(struct NumNode&) override;
-    void visit(struct CharNode&) override;
-    void visit(struct TrueNode&) override;
-    void visit(struct FalseNode&) override;
-    void visit(struct IDNode&) override;
-    void visit(struct NilNode&) override;
-    void visit(struct BinaryExprNode&) override;
-    void visit(struct MemberAccessExprNode&) override;
-    void visit(struct UnaryExprNode&) override;
-    void visit(struct AllocNode&) override;
-    void visit(struct FunctionCallNode&) override;
-    void visit(struct ReadCallNode&) override;
+    void visit(struct ArgsNode&, std::ostream& os) override;
+    void visit(struct DeclarationsNode&, std::ostream& os) override;
+    void visit(struct ForPrologueNode&, std::ostream& os) override;
+    void visit(struct ProgramNode&, std::ostream& os) override;
+    void visit(struct StructDefNode&, std::ostream& os) override;
+    void visit(struct ProcedureNode&, std::ostream& os) override;
+    void visit(struct MainNode&, std::ostream& os) override;
+    void visit(struct BlockNode&, std::ostream& os) override;
+    void visit(struct DeclarationNode&, std::ostream& os) override;
+    void visit(struct VarInitNode&, std::ostream& os) override;
+    void visit(struct IfNode&, std::ostream& os) override;
+    void visit(struct DeleteNode&, std::ostream& os) override;
+    void visit(struct PrintNode&, std::ostream& os) override;
+    void visit(struct ReturnNode&, std::ostream& os) override;
+    void visit(struct WhileNode&, std::ostream& os) override;
+    void visit(struct AssignmentNode&, std::ostream& os) override;
+    void visit(struct ForNode&, std::ostream& os) override;
+    void visit(struct BreakNode&, std::ostream& os) override;
+    void visit(struct NumNode&, std::ostream& os) override;
+    void visit(struct CharNode&, std::ostream& os) override;
+    void visit(struct TrueNode&, std::ostream& os) override;
+    void visit(struct FalseNode&, std::ostream& os) override;
+    void visit(struct IDNode&, std::ostream& os) override;
+    void visit(struct NilNode&, std::ostream& os) override;
+    void visit(struct BinaryExprNode&, std::ostream& os) override;
+    void visit(struct MemberAccessExprNode&, std::ostream& os) override;
+    void visit(struct UnaryExprNode&, std::ostream& os) override;
+    void visit(struct AllocNode&, std::ostream& os) override;
+    void visit(struct FunctionCallNode&, std::ostream& os) override;
+    void visit(struct ReadCallNode&, std::ostream& os) override;
 };
 
 #endif // XERLANG_TYPECHECK_H

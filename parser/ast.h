@@ -12,25 +12,25 @@
 struct ArgsNode : public ASTNode {
     std::vector<std::unique_ptr<ExprNode>> args;
     ArgsNode();
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct DeclarationsNode : public ASTNode {
     std::vector<std::unique_ptr<DeclarationNode>> declarations;
     DeclarationsNode();
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct TypeNode : public ASTNode {
     const std::string lexeme;
     TypeNode(std::string lexeme);
-    void accept(Visitor& v) override {}
+    void accept(Visitor& v, std::ostream& os) override {}
 };
 
 struct StarNode : public ASTNode {
     size_t count = 0;
     StarNode();
-    void accept(Visitor& v) override {}
+    void accept(Visitor& v, std::ostream& os) override {}
 };
 
 struct ForPrologueNode : public ASTNode {
@@ -38,14 +38,14 @@ struct ForPrologueNode : public ASTNode {
     std::unique_ptr<AssignmentNode> asst;
     ForPrologueNode(std::unique_ptr<VarInitNode> init);
     ForPrologueNode(std::unique_ptr<AssignmentNode> asst);
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct StructDefNode : public ASTNode {
     const std::string id;
     std::map<std::string, std::unique_ptr<DeclarationNode>> fields;
     StructDefNode(std::string id);
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct ProcedureNode : public ASTNode {
@@ -56,12 +56,12 @@ struct ProcedureNode : public ASTNode {
     std::string return_type;
     ProcedureNode(std::string id, std::string return_type, std::unique_ptr<DeclarationsNode> params, std::unique_ptr<BlockNode> block);
     ProcedureNode(std::string id, std::string return_type, std::unique_ptr<DeclarationsNode> params, std::unique_ptr<BlockNode> block, Parser::ParserSymbol node_type);
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct MainNode : public ProcedureNode {
     MainNode(std::unique_ptr<BlockNode> b);
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct ProgramNode : public ASTNode {
@@ -72,13 +72,13 @@ struct ProgramNode : public ASTNode {
     std::unordered_map<std::string, SymbolTableEntry> symbol_table;
     std::unordered_map<std::string, int> type_sizes;
     ProgramNode();
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct BlockNode : public ASTNode {
     std::vector<std::unique_ptr<StatementNode>> statements;
     BlockNode();
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 //// Statements
@@ -99,37 +99,37 @@ struct ExprNode : public StatementNode {
 struct NumNode : public ExprNode {
     const int val;
     NumNode(const std::string& lexeme);
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct CharNode : public ExprNode {
     const char val;
     CharNode(const std::string& lexeme);
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct TrueNode : public ExprNode {
     const bool val = true;
     TrueNode();
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct FalseNode : public ExprNode {
     const bool val = false;
     FalseNode();
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct IDNode : public ExprNode {
     const std::string name;
     int offset = 1;
     IDNode(std::string lexeme);
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct NilNode : public ExprNode {
     NilNode();
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct BinaryExprNode : public ExprNode {
@@ -137,7 +137,7 @@ struct BinaryExprNode : public ExprNode {
     std::unique_ptr<ExprNode> LHS;
     std::unique_ptr<ExprNode> RHS;
     BinaryExprNode(Parser::ParserSymbol op, std::unique_ptr<ExprNode> l, std::unique_ptr<ExprNode> r);
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct MemberAccessExprNode : public ExprNode {
@@ -145,21 +145,21 @@ struct MemberAccessExprNode : public ExprNode {
     std::unique_ptr<ExprNode> arg;
     const std::string id;
     MemberAccessExprNode(Parser::ParserSymbol op, std::unique_ptr<ExprNode> arg, std::string id);
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct UnaryExprNode : public ExprNode {
     Parser::ParserSymbol op;
     std::unique_ptr<ExprNode> arg;
     UnaryExprNode(Parser::ParserSymbol op, std::unique_ptr<ExprNode> arg);
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct AllocNode : public ExprNode {
     const std::string ptr_type;
     const int size;
     AllocNode(std::string type, int size);
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct FunctionCallNode : public ExprNode {
@@ -167,12 +167,12 @@ struct FunctionCallNode : public ExprNode {
     std::unique_ptr<ArgsNode> args;
     FunctionCallNode(std::string id, std::unique_ptr<ArgsNode> args);
     FunctionCallNode(std::string id, std::unique_ptr<ArgsNode> args, Parser::ParserSymbol node_type);
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct ReadCallNode : public FunctionCallNode {
     ReadCallNode();
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 // Statements
@@ -182,7 +182,7 @@ struct DeclarationNode : public StatementNode {
     std::string type;
     int frame_offset = 0;
     DeclarationNode(std::string id, std::string type);
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct VarInitNode : public StatementNode {
@@ -190,7 +190,7 @@ struct VarInitNode : public StatementNode {
     std::unique_ptr<ExprNode> val;
     VarInitNode(std::unique_ptr<DeclarationNode> dcl);
     VarInitNode(std::unique_ptr<DeclarationNode> dcl, std::unique_ptr<ExprNode> val);
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct IfNode : public StatementNode {
@@ -201,39 +201,39 @@ struct IfNode : public StatementNode {
 
     std::vector<IfClause> clauses;
     IfNode();
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct DeleteNode : public StatementNode {
     std::unique_ptr<ExprNode> ptr;
     DeleteNode(std::unique_ptr<ExprNode> ptr);
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct PrintNode : public StatementNode {
     std::unique_ptr<ArgsNode> args;
     PrintNode(std::unique_ptr<ArgsNode> args);
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct ReturnNode : public StatementNode {
     std::unique_ptr<ExprNode> expr;
     ReturnNode(std::unique_ptr<ExprNode> expr);
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct WhileNode : public StatementNode {
     std::unique_ptr<ExprNode> condition;
     std::unique_ptr<BlockNode> statements;
     WhileNode(std::unique_ptr<ExprNode> condition, std::unique_ptr<BlockNode> statements);
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct AssignmentNode : public StatementNode {
     std::unique_ptr<ExprNode> LHS;
     std::unique_ptr<ExprNode> RHS;
     AssignmentNode(std::unique_ptr<ExprNode> LHS, std::unique_ptr<ExprNode> RHS);
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct ForNode : public StatementNode {
@@ -242,13 +242,13 @@ struct ForNode : public StatementNode {
     std::unique_ptr<StatementNode> epilogue;
     std::unique_ptr<BlockNode> block;
     ForNode(std::unique_ptr<ForPrologueNode> pro, std::unique_ptr<ExprNode> cond, std::unique_ptr<StatementNode> asst, std::unique_ptr<BlockNode> block);
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 struct BreakNode : public StatementNode {
     ASTNode* loop_target = nullptr;
     BreakNode();
-    void accept(Visitor& v) override;
+    void accept(Visitor& v, std::ostream& os) override;
 };
 
 #endif // XERLANG_AST_H

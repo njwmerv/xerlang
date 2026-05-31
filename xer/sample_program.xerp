@@ -1,0 +1,256 @@
+↪ Program
+  > Struct Definitions
+   ↪ Struct Definition : Data
+       ↪ Declaration: a : char : 0
+       ↪ Declaration: b : char : -1
+       ↪ Declaration: c : int : -4
+       ↪ Declaration: d : char : -8
+  > Type Sizes
+   > Data : 12 b
+   > * : 8 b
+   > bool : 1 b
+   > char : 1 b
+   > int : 4 b
+  > Global Vars
+   ↪ Variable Initialization
+       ↪ Declaration: a : char : 0
+   ↪ Variable Initialization
+       ↪ Declaration: x : int : 0
+   ↪ Variable Initialization
+       ↪ Declaration: AB : int : 0
+       ↪ Unary Expression: expr4 : int
+           ↪ Integer : 1
+  > Global Symbol Table
+   > a : char : 0
+   > x : int : 0
+   > AB : int : 0
+  > Procedures
+   ↪ Procedure: guhh -> bool
+     > Symbol Table
+     > Statements
+   ↪ Procedure: is_capitalized -> bool
+     > Parameters
+       ↪ Declarations
+           ↪ Declaration: c : char : 2
+     > Symbol Table
+       > c : char : -1
+     > Statements
+       ↪ Block
+           ↪ Return
+               ↪ Binary Expression: OR : bool
+                   ↪ Binary Expression: OR : bool
+                       ↪ Binary Expression: EQUALS : bool
+                           ↪ ID : c : char : -1
+                           ↪ Character : A
+                       ↪ Binary Expression: EQUALS : bool
+                           ↪ ID : c : char : -1
+                           ↪ Character : B
+                   ↪ Binary Expression: EQUALS : bool
+                       ↪ ID : c : char : -1
+                       ↪ Character : C
+   ↪ Procedure: incr -> void
+     > Symbol Table
+     > Statements
+       ↪ Block
+           ↪ Assignment
+             > LValue
+               ↪ ID : x : int : 1
+             > New Value
+               ↪ Binary Expression: PLUS : int
+                   ↪ ID : x : int : 1
+                   ↪ Integer : 1
+           ↪ Return
+   ↪ Procedure: decr -> void
+     > Parameters
+       ↪ Declarations
+           ↪ Declaration: x : int* : 20
+           ↪ Declaration: y : int : 16
+     > Symbol Table
+       > x : int* : -8
+       > y : int : -12
+     > Statements
+       ↪ Block
+           ↪ Assignment
+             > LValue
+               ↪ Unary Expression: AT : int
+                   ↪ ID : x : int* : -8
+             > New Value
+               ↪ Binary Expression: SUB : int
+                   ↪ Unary Expression: AT : int
+                       ↪ ID : x : int* : -8
+                   ↪ ID : y : int : -12
+           ↪ Return
+   ↪ Main: main
+     > Symbol Table
+       > c : char : -1
+       > a : int : -4
+       > x : int : -8
+       > b : int : -12
+       > x : int : -16
+       > c : int : -20
+       > x : int : -24
+       > i : int : -28
+       > d : int : -32
+       > x : int : -36
+       > x : int : -40
+       > e : int : -44
+       > x : int : -48
+       > f : int : -52
+       > G : Data : -64
+       > arr : Data* : -72
+       > BAM : bool : -73
+       > ptr : char* : -80
+     > Statements
+       ↪ Block
+           ↪ Variable Initialization
+               ↪ Declaration: c : char : -1
+               ↪ Function Call: read -> char
+           ↪ If Tree
+             > IF
+               ↪ Binary Expression: EQUALS : bool
+                   ↪ ID : c : char : -1
+                   ↪ Character : a
+               ↪ Block
+                   ↪ Print
+                       ↪ Args
+                           ↪ ID : c : char : -1
+                   ↪ Variable Initialization
+                       ↪ Declaration: a : int : -4
+                       ↪ Integer : 5
+                   ↪ Declaration: x : int : -8
+             > ELIF
+               ↪ Function Call: is_capitalized -> bool
+                   ↪ Args
+                       ↪ ID : c : char : -1
+               ↪ Block
+                   ↪ Variable Initialization
+                       ↪ Declaration: b : int : -12
+                       ↪ Integer : 5
+                   ↪ Print
+                       ↪ Args
+                           ↪ ID : x : int : 1
+                   ↪ Declaration: x : int : -16
+             > ELSE
+               ↪ Block
+                   ↪ Variable Initialization
+                       ↪ Declaration: c : int : -20
+                       ↪ Integer : 50
+                   ↪ Declaration: x : int : -24
+                   ↪ For
+                       ↪ For Prologue
+                           ↪ Variable Initialization
+                               ↪ Declaration: i : int : -28
+                               ↪ Integer : 0
+                     > Condition
+                       ↪ Binary Expression: LT : bool
+                           ↪ ID : i : int : -28
+                           ↪ Integer : 10
+                     > For Epilogue
+                       ↪ Unary Expression: INCR
+                           ↪ ID : i : int : -28
+                     > Statements
+                       ↪ Block
+                           ↪ Variable Initialization
+                               ↪ Declaration: d : int : -32
+                               ↪ Integer : 100
+                           ↪ Declaration: x : int : -36
+                           ↪ Print
+                               ↪ Args
+                                   ↪ ID : i : int : -28
+                   ↪ While
+                       ↪ Binary Expression: NEQ : bool
+                           ↪ ID : c : int : -20
+                           ↪ Integer : 5
+                       ↪ Block
+                           ↪ Declaration: x : int : -40
+                           ↪ Variable Initialization
+                               ↪ Declaration: e : int : -44
+                               ↪ Integer : 500
+                           ↪ Print
+                               ↪ Args
+                                   ↪ ID : c : int : -20
+                           ↪ If Tree
+                             > IF
+                               ↪ ID : c : int : -20
+                               ↪ Block
+                                   ↪ Declaration: x : int : -48
+                                   ↪ Variable Initialization
+                                       ↪ Declaration: f : int : -52
+                                       ↪ Binary Expression: PLUS : int
+                                           ↪ ID : c : int : -20
+                                           ↪ ID : e : int : -44
+                                   ↪ Break
+           ↪ Declaration: G : Data : -64
+           ↪ Assignment
+             > LValue
+               ↪ Member Access: DOT : char
+                   ↪ ID : G : Data : -64
+                 > Field : a
+             > New Value
+               ↪ Character : a
+           ↪ Assignment
+             > LValue
+               ↪ Member Access: DOT : int
+                   ↪ ID : G : Data : -64
+                 > Field : c
+             > New Value
+               ↪ Binary Expression: MULT : int
+                   ↪ Integer : 100
+                   ↪ ID : x : int : 1
+           ↪ Assignment
+             > LValue
+               ↪ Member Access: DOT : char
+                   ↪ ID : G : Data : -64
+                 > Field : b
+             > New Value
+               ↪ Character : b
+           ↪ Variable Initialization
+               ↪ Declaration: arr : Data* : -72
+               ↪ Allocation: Data* [ 5 ]
+           ↪ Assignment
+             > LValue
+               ↪ Member Access: ARROW : char
+                   ↪ Binary Expression: PLUS : Data*
+                       ↪ ID : arr : Data* : -72
+                       ↪ Integer : 0
+                 > Field : a
+             > New Value
+               ↪ Character : a
+           ↪ Assignment
+             > LValue
+               ↪ Member Access: ARROW : char
+                   ↪ Binary Expression: PLUS : Data*
+                       ↪ ID : arr : Data* : -72
+                       ↪ Integer : 1
+                 > Field : a
+             > New Value
+               ↪ Character : b
+           ↪ Assignment
+             > LValue
+               ↪ Member Access: ARROW : int
+                   ↪ Binary Expression: PLUS : Data*
+                       ↪ ID : arr : Data* : -72
+                       ↪ Integer : 4
+                 > Field : c
+             > New Value
+               ↪ Binary Expression: MULT : int
+                   ↪ Integer : 100
+                   ↪ Integer : 5
+           ↪ Variable Initialization
+               ↪ Declaration: BAM : bool : -73
+               ↪ Function Call: guhh -> bool
+           ↪ Variable Initialization
+               ↪ Declaration: ptr : char* : -80
+               ↪ Unary Expression: ADDR : char*
+                   ↪ ID : c : char : -1
+           ↪ Print
+               ↪ Args
+                   ↪ Member Access: ARROW : char
+                       ↪ ID : arr : Data* : -72
+                     > Field : a
+           ↪ Delete
+               ↪ ID : arr : Data* : -72
+           ↪ Delete
+               ↪ ID : arr : Data* : -72
+           ↪ Return
+               ↪ Integer : 0
