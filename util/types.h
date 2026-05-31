@@ -115,7 +115,7 @@ struct ASTNode {
 
     virtual ~ASTNode() = default;
 
-    virtual void accept(struct Visitor& v) = 0;
+    virtual void accept(struct Visitor& v, std::ostream& os) = 0;
 };
 
 // Analysis/Code Generation

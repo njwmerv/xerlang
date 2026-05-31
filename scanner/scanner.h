@@ -5,6 +5,6 @@
 #include <vector>
 #include "../util/types.h"
 
-void scan(std::istream& is, std::ostream& os, std::vector<Token>& stream, std::ostream& err);
+void scan(std::istream& is, std::vector<Token>& stream, std::ostream& err);
 
 #endif //SCANNER_H
