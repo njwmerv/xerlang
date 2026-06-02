@@ -14,277 +14,309 @@ size_t depth(const struct ASTNode& ast) {
     return INDENT * depth;
 }
 
-void print_indent(size_t indent, const std::string& message, std::ostream& os) {
+void Printer::print_indent(size_t indent, const std::string& message) {
     for (size_t i = 1; i < indent; i++) os << ' ';
     os << message;
 }
 
-inline void print_STE(size_t indent, const SymbolTableEntry& STE, std::ostream& os) {
-    print_indent(indent + INDENT, "> " + STE.id + " : " + STE.type + " : " + std::to_string(STE.frame_offset) + '\n', os);
+void Printer::print_STE(size_t indent, const SymbolTableEntry& STE) {
+    print_indent(indent + INDENT, "> " + STE.id + " : " + STE.type + " : " + std::to_string(STE.frame_offset) + '\n');
 }
 
 // Implementation
 
-void Printer::visit(struct ArgsNode& a, std::ostream& os) {
-    print_indent(depth(a), "↪ Args\n", os);
-    for (auto& arg : a.args) arg->accept(*this, os);
-}
-void Printer::visit(struct DeclarationsNode& a, std::ostream& os) {
-    if (a.declarations.empty()) return;
-    print_indent(depth(a), "↪ Declarations\n", os);
-    for (auto& dec : a.declarations) dec->accept(*this, os);
-}
-void Printer::visit(struct ForPrologueNode& a, std::ostream& os) {
-    print_indent(depth(a), "↪ For Prologue\n", os);
-    if (a.init) a.init->accept(*this, os);
-    if (a.asst) a.asst->accept(*this, os);
-}
-void Printer::visit(struct ProgramNode& a, std::ostream& os) {
-    print_indent(0, "↪ Program\n", os);
+Printer::Printer(std::ostream& os) : os{os} {}
 
-    print_indent(INDENT >> 1, " > Struct Definitions\n", os);
-    for (auto& [type, sd] : a.struct_defs) sd->accept(*this, os);
+std::any Printer::visit(struct ArgsNode& a) {
+    print_indent(depth(a), "↪ Args\n");
+    for (auto& arg : a.args) arg->accept(*this);
+    return std::any{};
+}
+std::any Printer::visit(struct DeclarationsNode& a) {
+    if (a.declarations.empty()) return std::any{};
+    print_indent(depth(a), "↪ Declarations\n");
+    for (auto& dec : a.declarations) dec->accept(*this);
+    return std::any{};
+}
+std::any Printer::visit(struct ForPrologueNode& a) {
+    print_indent(depth(a), "↪ For Prologue\n");
+    if (a.init) a.init->accept(*this);
+    if (a.asst) a.asst->accept(*this);
+    return std::any{};
+}
+std::any Printer::visit(struct ProgramNode& a) {
+    print_indent(0, "↪ Program\n");
 
-    print_indent(INDENT >> 1, " > Type Sizes\n", os);
+    print_indent(INDENT >> 1, " > Struct Definitions\n");
+    for (auto& [type, sd] : a.struct_defs) sd->accept(*this);
+
+    print_indent(INDENT >> 1, " > Type Sizes\n");
     for (auto& [type, size] : a.type_sizes) {
-        print_indent(INDENT, "> " + type + " : " + std::to_string(size) + " b\n", os);
+        print_indent(INDENT, "> " + type + " : " + std::to_string(size) + " b\n");
     }
 
-    print_indent(INDENT >> 1, " > Global Vars\n", os);
-    for (auto& gv : a.global_vars) gv->accept(*this, os);
+    print_indent(INDENT >> 1, " > Global Vars\n");
+    for (auto& gv : a.global_vars) gv->accept(*this);
 
-    print_indent(INDENT >> 1, " > Global Symbol Table\n", os);
+    print_indent(INDENT >> 1, " > Global Symbol Table\n");
     for (auto& [name, STE] : a.symbol_table)
-        print_STE(0, STE, os);
+        print_STE(0, STE);
 
-    print_indent(INDENT >> 1, " > Procedures\n", os);
-    for (auto& [id, proc] : a.procedures) proc->accept(*this, os);
+    print_indent(INDENT >> 1, " > Procedures\n");
+    for (auto& [id, proc] : a.procedures) proc->accept(*this);
 
     // print_indent(indent + (INDENT >> 1), "> Main\n");
-    a.main->accept(*this, os);
+    a.main->accept(*this);
+    return std::any{};
 }
-void Printer::visit(struct StructDefNode& a, std::ostream& os) {
-    print_indent(depth(a), "↪ Struct Definition : " + a.id + '\n', os);
+std::any Printer::visit(struct StructDefNode& a) {
+    print_indent(depth(a), "↪ Struct Definition : " + a.id + '\n');
     for (const auto& [field, dcl] : a.fields) {
-        dcl->accept(*this, os);
+        dcl->accept(*this);
     }
+    return std::any{};
 }
-void Printer::visit(struct ProcedureNode& a, std::ostream& os) {
+std::any Printer::visit(struct ProcedureNode& a) {
     const size_t indent = depth(a);
 
-    print_indent(indent, "↪ Procedure: " + a.id + " -> " + a.return_type + '\n', os);
+    print_indent(indent, "↪ Procedure: " + a.id + " -> " + a.return_type + '\n');
 
     if (!a.params->declarations.empty()) {
-        print_indent(indent + (INDENT >> 1), "> Parameters\n", os);
-        a.params->accept(*this, os);
+        print_indent(indent + (INDENT >> 1), "> Parameters\n");
+        a.params->accept(*this);
     }
 
-    print_indent(indent + (INDENT >> 1), "> Symbol Table\n", os);
+    print_indent(indent + (INDENT >> 1), "> Symbol Table\n");
     for (auto& STE : a.symbol_table.see_syms()) {
-        print_STE(indent, STE, os);
+        print_STE(indent, STE);
     }
 
-    print_indent(indent + (INDENT >> 1), "> Statements\n", os);
-    a.block->accept(*this, os);
+    print_indent(indent + (INDENT >> 1), "> Statements\n");
+    a.block->accept(*this);
+    return std::any{};
 }
-void Printer::visit(struct MainNode& a, std::ostream& os) {
+std::any Printer::visit(struct MainNode& a) {
     const size_t indent = depth(a);
-    print_indent(indent, "↪ Main: main\n", os);
+    print_indent(indent, "↪ Main: main\n");
 
-    print_indent(indent + (INDENT >> 1), "> Symbol Table\n", os);
+    print_indent(indent + (INDENT >> 1), "> Symbol Table\n");
     for (auto& STE : a.symbol_table.see_syms()) {
-        print_STE(indent, STE, os);
+        print_STE(indent, STE);
     }
 
-    print_indent(indent + (INDENT >> 1), "> Statements\n", os);
-    a.block->accept(*this, os);
+    print_indent(indent + (INDENT >> 1), "> Statements\n");
+    a.block->accept(*this);
+    return std::any{};
 }
-void Printer::visit(struct BlockNode& a, std::ostream& os) {
-    if (a.statements.empty()) return;
-    print_indent(depth(a), "↪ Block\n", os);
-    for (auto& s : a.statements) s->accept(*this, os);
+std::any Printer::visit(struct BlockNode& a) {
+    if (a.statements.empty()) return std::any{};
+    print_indent(depth(a), "↪ Block\n");
+    for (auto& s : a.statements) s->accept(*this);
+    return std::any{};
 }
-void Printer::visit(struct DeclarationNode& a, std::ostream& os) {
-    print_indent(depth(a), "↪ Declaration: " + a.id + " : " + a.type + " : " + std::to_string(a.frame_offset) + '\n', os);
+std::any Printer::visit(struct DeclarationNode& a) {
+    print_indent(depth(a), "↪ Declaration: " + a.id + " : " + a.type + " : " + std::to_string(a.frame_offset) + '\n');
+    return std::any{};
 }
-void Printer::visit(struct VarInitNode& a, std::ostream& os) {
+std::any Printer::visit(struct VarInitNode& a) {
     const size_t indent = depth(a);
 
-    print_indent(indent, "↪ Variable Initialization\n", os);
+    print_indent(indent, "↪ Variable Initialization\n");
 
     // print_indent(indent + (INDENT >> 1), "> Declaration\n");
-    a.dcl->accept(*this, os);
+    a.dcl->accept(*this);
 
-    if (!a.val) return;
+    if (!a.val) return std::any{};
     // print_indent(indent + (INDENT >> 1), "> Initial Value\n");
-    a.val->accept(*this, os);
+    a.val->accept(*this);
+    return std::any{};
 }
-void Printer::visit(struct IfNode& a, std::ostream& os) {
+std::any Printer::visit(struct IfNode& a) {
     const size_t indent = depth(a);
 
-    print_indent(indent, "↪ If Tree\n", os);
+    print_indent(indent, "↪ If Tree\n");
 
     auto it = a.clauses.begin();
-    print_indent(indent + (INDENT >> 1), "> IF\n", os);
+    print_indent(indent + (INDENT >> 1), "> IF\n");
     // print_indent(indent + INDENT, "> Condition\n");
-    it->cond->accept(*this, os);
+    it->cond->accept(*this);
     // print_indent(indent + INDENT, "> Statements\n");
-    it->block->accept(*this, os);
+    it->block->accept(*this);
 
     it++;
     for (; it != a.clauses.end(); it++) {
-         print_indent(indent + (INDENT >> 1), "> ", os);
+         print_indent(indent + (INDENT >> 1), "> ");
         if (it->cond) {
             os << "ELIF\n";
             // print_indent(indent + INDENT, "> Condition\n");
-            it->cond->accept(*this, os);
+            it->cond->accept(*this);
         }
         else {
             os << "ELSE\n";
         }
         // print_indent(indent + INDENT, "> Statements\n");
-        it->block->accept(*this, os);
+        it->block->accept(*this);
     }
+    return std::any{};
 }
-void Printer::visit(struct DeleteNode& a, std::ostream& os) {
+std::any Printer::visit(struct DeleteNode& a) {
     const size_t indent = depth(a);
-    print_indent(indent, "↪ Delete\n", os);
+    print_indent(indent, "↪ Delete\n");
 
     // print_indent(indent + (INDENT >> 1), "> Pointer\n");
-    a.ptr->accept(*this, os);
+    a.ptr->accept(*this);
+    return std::any{};
 }
-void Printer::visit(struct PrintNode& a, std::ostream& os) {
+std::any Printer::visit(struct PrintNode& a) {
     const size_t indent = depth(a);
-    print_indent(indent, "↪ Print\n", os);
+    print_indent(indent, "↪ Print\n");
 
     // print_indent(indent + (INDENT >> 1), "> Arguments\n");
-    a.args->accept(*this, os);
+    a.args->accept(*this);
+    return std::any{};
 }
-void Printer::visit(struct ReturnNode& a, std::ostream& os) {
+std::any Printer::visit(struct ReturnNode& a) {
     const size_t indent = depth(a);
-    print_indent(indent, "↪ Return\n", os);
+    print_indent(indent, "↪ Return\n");
 
-    if (!a.expr) return;
+    if (!a.expr) return std::any{};
     // print_indent(indent + (INDENT >> 1), "> Expr\n");
-    a.expr->accept(*this, os);
+    a.expr->accept(*this);
+    return std::any{};
 }
-void Printer::visit(struct WhileNode& a, std::ostream& os) {
+std::any Printer::visit(struct WhileNode& a) {
     const size_t indent = depth(a);
-    print_indent(indent, "↪ While\n", os);
+    print_indent(indent, "↪ While\n");
 
     // print_indent(indent + (INDENT >> 1), "> Condition\n");
-    a.condition->accept(*this, os);
+    a.condition->accept(*this);
 
     // print_indent(indent + (INDENT >> 1), "> Statements\n");
-    a.statements->accept(*this, os);
+    a.statements->accept(*this);
+    return std::any{};
 }
-void Printer::visit(struct AssignmentNode& a, std::ostream& os) {
+std::any Printer::visit(struct AssignmentNode& a) {
     const size_t indent = depth(a);
-    print_indent(indent, "↪ Assignment\n", os);
+    print_indent(indent, "↪ Assignment\n");
 
-    print_indent(indent + (INDENT >> 1), "> LValue\n", os);
-    a.LHS->accept(*this, os);
+    print_indent(indent + (INDENT >> 1), "> LValue\n");
+    a.LHS->accept(*this);
 
-    print_indent(indent + (INDENT >> 1), "> New Value\n", os);
-    a.RHS->accept(*this, os);
+    print_indent(indent + (INDENT >> 1), "> New Value\n");
+    a.RHS->accept(*this);
+    return std::any{};
 }
-void Printer::visit(struct ForNode& a, std::ostream& os) {
+std::any Printer::visit(struct ForNode& a) {
     const size_t indent = depth(a);
 
-    print_indent(indent, "↪ For\n", os);
+    print_indent(indent, "↪ For\n");
 
     // print_indent(indent + (INDENT >> 1), "> For Prologue\n");
-    a.prologue->accept(*this, os);
+    a.prologue->accept(*this);
 
-    print_indent(indent + (INDENT >> 1), "> Condition\n", os);
-    a.cond->accept(*this, os);
+    print_indent(indent + (INDENT >> 1), "> Condition\n");
+    a.cond->accept(*this);
 
-    print_indent(indent + (INDENT >> 1), "> For Epilogue\n", os);
-    a.epilogue->accept(*this, os);
+    print_indent(indent + (INDENT >> 1), "> For Epilogue\n");
+    a.epilogue->accept(*this);
 
-    print_indent(indent + (INDENT >> 1), "> Statements\n", os);
-    a.block->accept(*this, os);
+    print_indent(indent + (INDENT >> 1), "> Statements\n");
+    a.block->accept(*this);
+    return std::any{};
 }
-void Printer::visit(struct BreakNode& a, std::ostream& os) {
-    print_indent(depth(a), "↪ Break\n", os);
+std::any Printer::visit(struct BreakNode& a) {
+    print_indent(depth(a), "↪ Break\n");
+    return std::any{};
 }
-void Printer::visit(struct NumNode& a, std::ostream& os) {
-    print_indent(depth(a), "↪ Integer : " + std::to_string(a.val) + '\n', os);
+std::any Printer::visit(struct NumNode& a) {
+    print_indent(depth(a), "↪ Integer : " + std::to_string(a.val) + '\n');
+    return std::any{};
 }
-void Printer::visit(struct CharNode& a, std::ostream& os) {
-    print_indent(depth(a), "↪ Character : ", os);
+std::any Printer::visit(struct CharNode& a) {
+    print_indent(depth(a), "↪ Character : ");
     os << a.val << '\n';
+    return std::any{};
 }
-void Printer::visit(struct TrueNode& a, std::ostream& os) {
-    print_indent(depth(a), "↪ Boolean : TRUE\n", os);
+std::any Printer::visit(struct TrueNode& a) {
+    print_indent(depth(a), "↪ Boolean : TRUE\n");
+    return std::any{};
 }
-void Printer::visit(struct FalseNode& a, std::ostream& os) {
-    print_indent(depth(a), "↪ Boolean : FALSE\n", os);
+std::any Printer::visit(struct FalseNode& a) {
+    print_indent(depth(a), "↪ Boolean : FALSE\n");
+    return std::any{};
 }
-void Printer::visit(struct IDNode& a, std::ostream& os) {
-    print_indent(depth(a), "↪ ID : " + a.name, os);
+std::any Printer::visit(struct IDNode& a) {
+    print_indent(depth(a), "↪ ID : " + a.name);
     if (!a.type.empty()) os << " : " << a.type;
     os << " : " << a.offset << '\n';
+    return std::any{};
 }
-void Printer::visit(struct NilNode& a, std::ostream& os) {
-    print_indent(depth(a), "↪ Pointer : NULL\n", os);
+std::any Printer::visit(struct NilNode& a) {
+    print_indent(depth(a), "↪ Pointer : NULL\n");
+    return std::any{};
 }
-void Printer::visit(struct BinaryExprNode& a, std::ostream& os) {
+std::any Printer::visit(struct BinaryExprNode& a) {
     const size_t indent = depth(a);
     std::ostringstream oss;
     oss << "↪ Binary Expression: " << a.op;
     if (!a.type.empty()) oss << " : " << a.type;
     oss << '\n';
-    print_indent(indent, oss.str(), os);
+    print_indent(indent, oss.str());
 
     // print_indent(indent + (INDENT >> 1), "> Left Side\n");
-    a.LHS->accept(*this, os);
+    a.LHS->accept(*this);
 
     // print_indent(indent + (INDENT >> 1), "> Right Side\n");
-    a.RHS->accept(*this, os);
+    a.RHS->accept(*this);
+    return std::any{};
 }
-void Printer::visit(struct MemberAccessExprNode& a, std::ostream& os) {
+std::any Printer::visit(struct MemberAccessExprNode& a) {
     const size_t indent = depth(a);
     std::ostringstream oss;
     oss << "↪ Member Access: " << a.op;
     if (!a.type.empty()) oss << " : " << a.type;
     oss << '\n';
-    print_indent(indent, oss.str(), os);
+    print_indent(indent, oss.str());
 
     // print_indent(indent + (INDENT >> 1), "> Argument\n");
-    a.arg->accept(*this, os);
+    a.arg->accept(*this);
 
-     print_indent(indent + (INDENT >> 1), "> Field : ", os);
+     print_indent(indent + (INDENT >> 1), "> Field : ");
      os << a.id + '\n';
+    return std::any{};
 }
-void Printer::visit(struct UnaryExprNode& a, std::ostream& os) {
+std::any Printer::visit(struct UnaryExprNode& a) {
     const size_t indent = depth(a);
     std::ostringstream oss;
     oss << "↪ Unary Expression: " << a.op;
     if (!a.type.empty()) oss << " : " << a.type;
     oss << '\n';
-    print_indent(indent, oss.str(), os);
+    print_indent(indent, oss.str());
 
     // print_indent(indent + (INDENT >> 1), "> Argument\n");
-    a.arg->accept(*this, os);
+    a.arg->accept(*this);
+    return std::any{};
 }
-void Printer::visit(struct AllocNode& a, std::ostream& os) {
-    print_indent(depth(a), "↪ Allocation: " + a.ptr_type + " [ " + std::to_string(a.size) + " ]\n", os);
+std::any Printer::visit(struct AllocNode& a) {
+    print_indent(depth(a), "↪ Allocation: " + a.ptr_type + " [ " + std::to_string(a.size) + " ]\n");
+    return std::any{};
 }
-void Printer::visit(struct FunctionCallNode& a, std::ostream& os) {
+std::any Printer::visit(struct FunctionCallNode& a) {
     ASTNode* prog = nullptr;
     get_parent_nodes(&a, &prog);
     auto* PROG = dynamic_cast<ProgramNode*>(prog);
 
     const size_t indent = depth(a);
-    print_indent(indent, "↪ Function Call: " + a.id + " -> " + PROG->procedures.at(a.id)->return_type + '\n', os);
+    print_indent(indent, "↪ Function Call: " + a.id + " -> " + PROG->procedures.at(a.id)->return_type + '\n');
 
-    if (!a.args) return;
+    if (!a.args) return std::any{};
 //    print_indent(indent + (INDENT >> 1), "> Arguments\n");
-    a.args->accept(*this, os);
+    a.args->accept(*this);
+    return std::any{};
 }
-void Printer::visit(struct ReadCallNode& a, std::ostream& os) {
+std::any Printer::visit(struct ReadCallNode& a) {
     std::ostringstream oss;
     oss << "↪ Function Call: read -> " << TYPE_CHAR << '\n';
-    print_indent(depth(a), oss.str(), os);
+    print_indent(depth(a), oss.str());
+    return std::any{};
 }

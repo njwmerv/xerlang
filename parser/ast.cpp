@@ -127,33 +127,33 @@ BreakNode::BreakNode() : StatementNode{Parser::ParserSymbol::BREAK} {}
 
 //// Visitor
 
-void ArgsNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void DeclarationsNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void ForPrologueNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void ProgramNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void StructDefNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void ProcedureNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void MainNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void BlockNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void DeclarationNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void VarInitNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void IfNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void DeleteNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void PrintNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void ReturnNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void WhileNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void AssignmentNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void ForNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void BreakNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void NumNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void CharNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void TrueNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void FalseNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void IDNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void NilNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void BinaryExprNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void MemberAccessExprNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void UnaryExprNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void AllocNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void FunctionCallNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
-void ReadCallNode::accept(struct Visitor& v, std::ostream& os) { v.visit(*this, os); }
+void ArgsNode::accept(struct Visitor& v) { v.visit(*this); }
+void DeclarationsNode::accept(struct Visitor& v) { v.visit(*this); }
+void ForPrologueNode::accept(struct Visitor& v) { v.visit(*this); }
+void ProgramNode::accept(struct Visitor& v) { v.visit(*this); }
+void StructDefNode::accept(struct Visitor& v) { v.visit(*this); }
+void ProcedureNode::accept(struct Visitor& v) { v.visit(*this); }
+void MainNode::accept(struct Visitor& v) { v.visit(*this); }
+void BlockNode::accept(struct Visitor& v) { v.visit(*this); }
+void DeclarationNode::accept(struct Visitor& v) { v.visit(*this); }
+void VarInitNode::accept(struct Visitor& v) { v.visit(*this); }
+void IfNode::accept(struct Visitor& v) { v.visit(*this); }
+void DeleteNode::accept(struct Visitor& v) { v.visit(*this); }
+void PrintNode::accept(struct Visitor& v) { v.visit(*this); }
+void ReturnNode::accept(struct Visitor& v) { v.visit(*this); }
+void WhileNode::accept(struct Visitor& v) { v.visit(*this); }
+void AssignmentNode::accept(struct Visitor& v) { v.visit(*this); }
+void ForNode::accept(struct Visitor& v) { v.visit(*this); }
+void BreakNode::accept(struct Visitor& v) { v.visit(*this); }
+void NumNode::accept(struct Visitor& v) { v.visit(*this); }
+void CharNode::accept(struct Visitor& v) { v.visit(*this); }
+void TrueNode::accept(struct Visitor& v) { v.visit(*this); }
+void FalseNode::accept(struct Visitor& v) { v.visit(*this); }
+void IDNode::accept(struct Visitor& v) { v.visit(*this); }
+void NilNode::accept(struct Visitor& v) { v.visit(*this); }
+void BinaryExprNode::accept(struct Visitor& v) { v.visit(*this); }
+void MemberAccessExprNode::accept(struct Visitor& v) { v.visit(*this); }
+void UnaryExprNode::accept(struct Visitor& v) { v.visit(*this); }
+void AllocNode::accept(struct Visitor& v) { v.visit(*this); }
+void FunctionCallNode::accept(struct Visitor& v) { v.visit(*this); }
+void ReadCallNode::accept(struct Visitor& v) { v.visit(*this); }

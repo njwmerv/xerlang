@@ -5,6 +5,7 @@
 #include <ostream>
 #include <vector>
 #include <array>
+#include <any>
 
 #define MAX_RHS_LEN 11
 
@@ -115,7 +116,7 @@ struct ASTNode {
 
     virtual ~ASTNode() = default;
 
-    virtual void accept(struct Visitor& v, std::ostream& os) = 0;
+    virtual void accept(Visitor& v) = 0;
 };
 
 // Analysis/Code Generation
@@ -131,36 +132,36 @@ struct ASTNode {
 
 struct Visitor {
     virtual ~Visitor() = default;
-    virtual void visit(struct ArgsNode&, std::ostream&) = 0;
-    virtual void visit(struct DeclarationsNode&, std::ostream&) = 0;
-    virtual void visit(struct ForPrologueNode&, std::ostream&) = 0;
-    virtual void visit(struct ProgramNode&, std::ostream&) = 0;
-    virtual void visit(struct StructDefNode&, std::ostream&) = 0;
-    virtual void visit(struct ProcedureNode&, std::ostream&) = 0;
-    virtual void visit(struct MainNode&, std::ostream&) = 0;
-    virtual void visit(struct BlockNode&, std::ostream&) = 0;
-    virtual void visit(struct DeclarationNode&, std::ostream&) = 0;
-    virtual void visit(struct VarInitNode&, std::ostream&) = 0;
-    virtual void visit(struct IfNode&, std::ostream&) = 0;
-    virtual void visit(struct DeleteNode&, std::ostream&) = 0;
-    virtual void visit(struct PrintNode&, std::ostream&) = 0;
-    virtual void visit(struct ReturnNode&, std::ostream&) = 0;
-    virtual void visit(struct WhileNode&, std::ostream&) = 0;
-    virtual void visit(struct AssignmentNode&, std::ostream&) = 0;
-    virtual void visit(struct ForNode&, std::ostream&) = 0;
-    virtual void visit(struct BreakNode&, std::ostream&) = 0;
-    virtual void visit(struct NumNode&, std::ostream&) = 0;
-    virtual void visit(struct CharNode&, std::ostream&) = 0;
-    virtual void visit(struct TrueNode&, std::ostream&) = 0;
-    virtual void visit(struct FalseNode&, std::ostream&) = 0;
-    virtual void visit(struct IDNode&, std::ostream&) = 0;
-    virtual void visit(struct NilNode&, std::ostream&) = 0;
-    virtual void visit(struct BinaryExprNode&, std::ostream&) = 0;
-    virtual void visit(struct MemberAccessExprNode&, std::ostream&) = 0;
-    virtual void visit(struct UnaryExprNode&, std::ostream&) = 0;
-    virtual void visit(struct AllocNode&, std::ostream&) = 0;
-    virtual void visit(struct FunctionCallNode&, std::ostream&) = 0;
-    virtual void visit(struct ReadCallNode&, std::ostream&) = 0;
+    virtual std::any visit(struct ArgsNode&) = 0;
+    virtual std::any visit(struct DeclarationsNode&) = 0;
+    virtual std::any visit(struct ForPrologueNode&) = 0;
+    virtual std::any visit(struct ProgramNode&) = 0;
+    virtual std::any visit(struct StructDefNode&) = 0;
+    virtual std::any visit(struct ProcedureNode&) = 0;
+    virtual std::any visit(struct MainNode&) = 0;
+    virtual std::any visit(struct BlockNode&) = 0;
+    virtual std::any visit(struct DeclarationNode&) = 0;
+    virtual std::any visit(struct VarInitNode&) = 0;
+    virtual std::any visit(struct IfNode&) = 0;
+    virtual std::any visit(struct DeleteNode&) = 0;
+    virtual std::any visit(struct PrintNode&) = 0;
+    virtual std::any visit(struct ReturnNode&) = 0;
+    virtual std::any visit(struct WhileNode&) = 0;
+    virtual std::any visit(struct AssignmentNode&) = 0;
+    virtual std::any visit(struct ForNode&) = 0;
+    virtual std::any visit(struct BreakNode&) = 0;
+    virtual std::any visit(struct NumNode&) = 0;
+    virtual std::any visit(struct CharNode&) = 0;
+    virtual std::any visit(struct TrueNode&) = 0;
+    virtual std::any visit(struct FalseNode&) = 0;
+    virtual std::any visit(struct IDNode&) = 0;
+    virtual std::any visit(struct NilNode&) = 0;
+    virtual std::any visit(struct BinaryExprNode&) = 0;
+    virtual std::any visit(struct MemberAccessExprNode&) = 0;
+    virtual std::any visit(struct UnaryExprNode&) = 0;
+    virtual std::any visit(struct AllocNode&) = 0;
+    virtual std::any visit(struct FunctionCallNode&) = 0;
+    virtual std::any visit(struct ReadCallNode&) = 0;
 };
 
 struct SymbolTableEntry {

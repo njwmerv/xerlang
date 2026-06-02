@@ -4,9 +4,9 @@
 
 // Implementation
 
-void TypeChecker::visit(struct ArgsNode& a, std::ostream& os) {
+std::any TypeChecker::visit(struct ArgsNode& a) {
     for (auto& arg : a.args) {
-        arg->accept(*this, os);
+        arg->accept(*this);
     }
 
     auto* func_call = dynamic_cast<FunctionCallNode*>(a.parent);
@@ -24,29 +24,34 @@ void TypeChecker::visit(struct ArgsNode& a, std::ostream& os) {
         if (a.args.at(i)->type != params.at(i)->type)
             throw std::runtime_error{"ERROR: Mismatching type for procedure call argument"};
     }
+    return std::any{};
 }
-void TypeChecker::visit(struct DeclarationsNode& a, std::ostream& os) {}
-void TypeChecker::visit(struct ForPrologueNode& a, std::ostream& os) {
-    if (a.asst) a.asst->accept(*this, os);
-    else if (a.init) a.init->accept(*this, os);
+std::any TypeChecker::visit(struct DeclarationsNode& a) { return std::any{}; }
+std::any TypeChecker::visit(struct ForPrologueNode& a) {
+    if (a.asst) a.asst->accept(*this);
+    else if (a.init) a.init->accept(*this);
     else throw std::runtime_error{"ERROR: Invalid For Prologue"}; // shouldn't ever throw...
+
+    return std::any{};
 }
-void TypeChecker::visit(struct ProgramNode& a, std::ostream& os) {
+std::any TypeChecker::visit(struct ProgramNode& a) {
     for (auto& [id, sd] : a.struct_defs) {
-        sd->accept(*this, os);
+        sd->accept(*this);
     }
 
     for (auto& init : a.global_vars) {
-        init->accept(*this, os);
+        init->accept(*this);
     }
 
     for (auto& [id, proc] : a.procedures) {
-        proc->accept(*this, os);
+        proc->accept(*this);
     }
 
-    a.main->accept(*this, os);
+    a.main->accept(*this);
+
+    return std::any{};
 }
-void TypeChecker::visit(struct StructDefNode& a, std::ostream& os) {
+std::any TypeChecker::visit(struct StructDefNode& a) {
     ASTNode* prog = nullptr;
     get_parent_nodes(&a, &prog);
     auto* PROG = dynamic_cast<ProgramNode*>(prog);
@@ -63,8 +68,10 @@ void TypeChecker::visit(struct StructDefNode& a, std::ostream& os) {
     }
     size = (size + 3) & ~3;
     sizes.insert({a.id, size});
+
+    return std::any{};
 }
-void TypeChecker::visit(struct ProcedureNode& a, std::ostream& os) {
+std::any TypeChecker::visit(struct ProcedureNode& a) {
     ASTNode* prog = nullptr;
     get_parent_nodes(&a, &prog);
     auto* PROG = dynamic_cast<ProgramNode*>(prog);
@@ -82,23 +89,27 @@ void TypeChecker::visit(struct ProcedureNode& a, std::ostream& os) {
         dcl->frame_offset += size;
     }
 
-    a.block->accept(*this, os);
+    a.block->accept(*this);
+
+    return std::any{};
 }
-void TypeChecker::visit(struct MainNode& a, std::ostream& os) {
-    a.block->accept(*this, os);
+std::any TypeChecker::visit(struct MainNode& a) {
+    a.block->accept(*this);
+    return std::any{};
 }
-void TypeChecker::visit(struct BlockNode& a, std::ostream& os) {
+std::any TypeChecker::visit(struct BlockNode& a) {
     for (auto& statement : a.statements) {
-        statement->accept(*this, os);
-        if (statement->node_type == Parser::RETURN) return;
+        statement->accept(*this);
+        if (statement->node_type == Parser::RETURN) return std::any{};
     }
+    return std::any{};
 }
-void TypeChecker::visit(struct DeclarationNode& a, std::ostream& os) {
+std::any TypeChecker::visit(struct DeclarationNode& a) {
     ASTNode* prog = nullptr;
     ASTNode* proc = nullptr;
     get_parent_nodes(&a, &prog, &proc);
 
-    if (!proc) return;
+    if (!proc) return std::any{};
 
     auto* PROG = dynamic_cast<ProgramNode*>(prog);
     auto* PROC = dynamic_cast<ProcedureNode*>(proc);
@@ -112,36 +123,41 @@ void TypeChecker::visit(struct DeclarationNode& a, std::ostream& os) {
 
     SymbolTableEntry* ste = PROC->symbol_table.lookup_variable(a.id);
     a.frame_offset = ste->frame_offset;
+    return std::any{};
 }
-void TypeChecker::visit(struct VarInitNode& a, std::ostream& os) {
-    a.dcl->accept(*this, os);
-    if (!a.val) return;
-    a.val->accept(*this, os);
+std::any TypeChecker::visit(struct VarInitNode& a) {
+    a.dcl->accept(*this);
+    if (!a.val) return std::any{};
+    a.val->accept(*this);
     if (a.dcl->type != a.val->type) throw std::runtime_error{"ERROR: Trying to initialize mismatching values"};
+    return std::any{};
 }
-void TypeChecker::visit(struct IfNode& a, std::ostream& os) {
+std::any TypeChecker::visit(struct IfNode& a) {
     ASTNode* proc = nullptr;
     get_parent_nodes(&a, nullptr, &proc);
     auto* PROC = dynamic_cast<ProcedureNode*>(proc);
 
     for (auto& clause : a.clauses) {
-        if (clause.cond) clause.cond->accept(*this, os);
+        if (clause.cond) clause.cond->accept(*this);
         PROC->symbol_table.enter_scope();
-        clause.block->accept(*this, os);
+        clause.block->accept(*this);
         PROC->symbol_table.exit_scope();
     }
+    return std::any{};
 }
-void TypeChecker::visit(struct DeleteNode& a, std::ostream& os) {
-    a.ptr->accept(*this, os);
+std::any TypeChecker::visit(struct DeleteNode& a) {
+    a.ptr->accept(*this);
     if (!is_pointer(a.ptr->type)) throw std::runtime_error{"ERROR: Trying to delete on NON-PTR type"};
+    return std::any{};
 }
-void TypeChecker::visit(struct PrintNode& a, std::ostream& os) {
+std::any TypeChecker::visit(struct PrintNode& a) {
     for (auto& arg : a.args->args) {
-        arg->accept(*this, os);
+        arg->accept(*this);
         if (is_struct(arg->type)) throw std::runtime_error{"ERROR: Trying to print STRUCT type"};
     }
+    return std::any{};
 }
-void TypeChecker::visit(struct ReturnNode& a, std::ostream& os) {
+std::any TypeChecker::visit(struct ReturnNode& a) {
     ASTNode* prog = nullptr;
     ASTNode* proc = nullptr;
     get_parent_nodes(&a, &prog, &proc);
@@ -152,51 +168,59 @@ void TypeChecker::visit(struct ReturnNode& a, std::ostream& os) {
         auto* PROC = dynamic_cast<ProcedureNode*>(proc);
         if (!a.expr && PROG->procedures.at(PROC->id)->return_type != "void")
             throw std::runtime_error{"ERROR: Returning nothing for NON-VOID procedure: " + PROC->id};
-        if (!a.expr) return;
+        if (!a.expr) return std::any{};
         if (PROG->procedures.at(PROC->id)->return_type == "void")
             throw std::runtime_error{"ERROR: Returning something for VOID function: " + PROC->id};
-        a.expr->accept(*this, os);
+        a.expr->accept(*this);
         if (a.expr->type != PROG->procedures.at(PROC->id)->return_type)
             throw std::runtime_error{"ERROR: Returning mismatching type for procedure: " + PROC->id};
     }
     else { // Main Node
         if (!a.expr)
             throw std::runtime_error{"ERROR: Returning nothing for main procedure"};
-        a.expr->accept(*this, os);
+        a.expr->accept(*this);
         if (a.expr->type != TYPE_INT)
             throw std::runtime_error{"ERROR: Returning NON-INT type for INT procedure: main"};
     }
+
+    return std::any{};
 }
-void TypeChecker::visit(struct WhileNode& a, std::ostream& os) {
-    a.condition->accept(*this, os);
+std::any TypeChecker::visit(struct WhileNode& a) {
+    a.condition->accept(*this);
 
     ASTNode* proc = nullptr;
     get_parent_nodes(&a, nullptr, &proc);
     auto* PROC = dynamic_cast<ProcedureNode*>(proc);
 
     PROC->symbol_table.enter_scope();
-    a.statements->accept(*this, os);
+    a.statements->accept(*this);
     PROC->symbol_table.exit_scope();
+
+    return std::any{};
 }
-void TypeChecker::visit(struct AssignmentNode& a, std::ostream& os) {
-    a.LHS->accept(*this, os);
+std::any TypeChecker::visit(struct AssignmentNode& a) {
+    a.LHS->accept(*this);
     if (!is_lvalue(a.LHS)) throw std::runtime_error{"ERROR: Trying to assign value to non-LVALUE"};
-    a.RHS->accept(*this, os);
+    a.RHS->accept(*this);
     if (a.LHS->type != a.RHS->type) throw std::runtime_error{"ERROR: Trying to assign mismatching values"};
+
+    return std::any{};
 }
-void TypeChecker::visit(struct ForNode& a, std::ostream& os) {
+std::any TypeChecker::visit(struct ForNode& a) {
     ASTNode* proc = nullptr;
     get_parent_nodes(&a, nullptr, &proc);
     auto* PROC = dynamic_cast<ProcedureNode*>(proc);
 
     PROC->symbol_table.enter_scope();
-    a.prologue->accept(*this, os);
-    a.cond->accept(*this, os);
-    a.epilogue->accept(*this, os);
-    a.block->accept(*this, os);
+    a.prologue->accept(*this);
+    a.cond->accept(*this);
+    a.epilogue->accept(*this);
+    a.block->accept(*this);
     PROC->symbol_table.exit_scope();
+
+    return std::any{};
 }
-void TypeChecker::visit(struct BreakNode& a, std::ostream& os) {
+std::any TypeChecker::visit(struct BreakNode& a) {
     ASTNode* parent = a.parent;
     while (parent) {
         if (parent->node_type == Parser::FOR || parent->node_type == Parser::WHILE) {
@@ -206,12 +230,13 @@ void TypeChecker::visit(struct BreakNode& a, std::ostream& os) {
         parent = parent->parent;
     }
     if (!a.loop_target) throw std::runtime_error{"ERROR: Using BREAK statement outside of for/while-loop body"};
+    return std::any{};
 }
-void TypeChecker::visit(struct NumNode& a, std::ostream& os) {}
-void TypeChecker::visit(struct CharNode& a, std::ostream& os) {}
-void TypeChecker::visit(struct TrueNode& a, std::ostream& os) {}
-void TypeChecker::visit(struct FalseNode& a, std::ostream& os) {}
-void TypeChecker::visit(struct IDNode& a, std::ostream& os) {
+std::any TypeChecker::visit(struct NumNode& a) { return std::any{}; }
+std::any TypeChecker::visit(struct CharNode& a) { return std::any{}; }
+std::any TypeChecker::visit(struct TrueNode& a) { return std::any{}; }
+std::any TypeChecker::visit(struct FalseNode& a) { return std::any{}; }
+std::any TypeChecker::visit(struct IDNode& a) {
     ASTNode* prog = nullptr;
     ASTNode* proc = nullptr;
     get_parent_nodes(&a, &prog, &proc);
@@ -223,23 +248,24 @@ void TypeChecker::visit(struct IDNode& a, std::ostream& os) {
     if (ste) {
         a.type = ste->type;
         a.offset = ste->frame_offset;
-        return;
+        return std::any{};
     }
 
     // Global Scope
     auto* PROG = dynamic_cast<ProgramNode*>(prog);
     if (PROG->symbol_table.contains(a.name)) {
         a.type = PROG->symbol_table.at(a.name).type;
-        return;
+        return std::any{};
     }
     throw std::runtime_error{"ERROR: Unidentified variable: " + a.name + " in procedure: " + PROC->id};
 }
-void TypeChecker::visit(struct NilNode& a, std::ostream& os) {
+std::any TypeChecker::visit(struct NilNode& a) {
     a.type = "*";
+    return std::any{};
 }
-void TypeChecker::visit(struct BinaryExprNode& a, std::ostream& os) {
-    a.LHS->accept(*this, os);
-    a.RHS->accept(*this, os);
+std::any TypeChecker::visit(struct BinaryExprNode& a) {
+    a.LHS->accept(*this);
+    a.RHS->accept(*this);
     switch (a.op) {
         case Parser::OR:
         case Parser::AND:
@@ -282,9 +308,11 @@ void TypeChecker::visit(struct BinaryExprNode& a, std::ostream& os) {
         default:
             throw std::runtime_error{"ERROR: Invalid Binary Expression Operator Found"};
     }
+
+    return std::any{};
 }
-void TypeChecker::visit(struct MemberAccessExprNode& a, std::ostream& os) {
-    a.arg->accept(*this, os);
+std::any TypeChecker::visit(struct MemberAccessExprNode& a) {
+    a.arg->accept(*this);
 
     ASTNode* prog = nullptr;
     get_parent_nodes(&a, &prog);
@@ -322,9 +350,11 @@ void TypeChecker::visit(struct MemberAccessExprNode& a, std::ostream& os) {
         default:
             throw std::runtime_error{"ERROR: Invalid Member Access Operator Found"};
     }
+
+    return std::any{};
 }
-void TypeChecker::visit(struct UnaryExprNode& a, std::ostream& os) {
-    a.arg->accept(*this, os);
+std::any TypeChecker::visit(struct UnaryExprNode& a) {
+    a.arg->accept(*this);
     switch (a.op) {
         case Parser::NOT:
             if (a.arg->type != TYPE_BOOL) throw std::runtime_error{"ERROR: Attempting to use BOOL operator ! on NON-BOOL type"};
@@ -354,11 +384,15 @@ void TypeChecker::visit(struct UnaryExprNode& a, std::ostream& os) {
         default:
             throw std::runtime_error{"ERROR: Invalid Unary Expression Operator Found"};
     }
+
+    return std::any{};
 }
-void TypeChecker::visit(struct AllocNode& a, std::ostream& os) {
+std::any TypeChecker::visit(struct AllocNode& a) {
     a.type = a.ptr_type;
+
+    return std::any{};
 }
-void TypeChecker::visit(struct FunctionCallNode& a, std::ostream& os) {
+std::any TypeChecker::visit(struct FunctionCallNode& a) {
     ASTNode* prog = nullptr;
     ASTNode* proc = nullptr;
     get_parent_nodes(&a, &prog, &proc);
@@ -379,8 +413,11 @@ void TypeChecker::visit(struct FunctionCallNode& a, std::ostream& os) {
     if (!PROG->procedures.contains(a.id)) throw std::runtime_error{"ERROR: Trying to call undefined procedure: " + a.id};
     a.type = PROG->procedures.at(a.id)->return_type;
 
-    if (a.args) a.args->accept(*this, os);
+    if (a.args) a.args->accept(*this);
+
+    return std::any{};
 }
-void TypeChecker::visit(struct ReadCallNode& a, std::ostream& os) {
+std::any TypeChecker::visit(struct ReadCallNode& a) {
     a.type = TYPE_CHAR;
+    return std::any{};
 }
