@@ -2,11 +2,17 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <chrono>
+
+#include <llvm/Support/FileSystem.h>
+#include <llvm/Support/raw_ostream.h>
+
 #include "parser/parser.h"
 #include "scanner/scanner.h"
 #include "util/types.h"
 #include "visitors/printer.h"
 #include "visitors/typecheck.h"
+#include "visitors/codegen.h"
 
 #define SCAN_ONLY       1 << 0
 #define PARSE_ONLY      1 << 1
@@ -16,6 +22,8 @@
 #define CODE_ONLY       1 << 5
 
 int main(int argc, char* argv[]) {
+    auto start = std::chrono::steady_clock::now();
+
     size_t flags = 0;
     std::string file;
     std::string exec_name;
@@ -58,6 +66,7 @@ int main(int argc, char* argv[]) {
             file = argv[i];
         }
     }
+    file = "../xer/sample_program.xer";
     if (file.empty()) {
         std::cerr << "ERROR: Never given file to compile\n";
         return 4;
@@ -99,33 +108,47 @@ int main(int argc, char* argv[]) {
         return 5;
     }
     if (flags & PARSE_ONLY) {
-        Printer printer;
         std::ofstream xerp{file_root + ".xerp"};
-        root->accept(printer, xerp);
+        Printer printer{xerp};
+        root->accept(printer);
         return 0;
     }
 
     // Semantic Analysis
     try {
         TypeChecker tc;
-        root->accept(tc, std::cout);
+        root->accept(tc);
     }
     catch (std::exception& e) {
         std::cerr << "ERROR: Typechecker: " << e.what() << '\n';
         return 6;
     }
     if (flags & SEMANTIC_ONLY) {
-        Printer printer;
         std::ofstream xerp{file_root + ".xerp"};
-        root->accept(printer, xerp);
+        Printer printer{xerp};
+        root->accept(printer);
         return 0;
     }
 
     // Convert to IR
 
+    CodeGen cg{};
+    try {
+        root->accept(cg);
+    }
+    catch (std::exception& e) {
+        std::cerr << "ERROR: IR Generator: " << e.what() << '\n';
+        return 7;
+    }
 
-    if (flags & IR_ONLY) {
-        // PRINT IR
+    if (flags | IR_ONLY) {
+        std::error_code error_code;
+        llvm::raw_fd_ostream ll{file_root + ".ll", error_code, llvm::sys::fs::OF_None};
+        if (error_code) {
+            llvm::errs() << "ERROR: Could not open file: " << error_code.message() << "\n";
+            return 8;
+        }
+        cg.print_ir(ll);
         return 0;
     }
 
@@ -139,6 +162,12 @@ int main(int argc, char* argv[]) {
     if (!(flags & CODE_ONLY)) {
         // Ignore headers that make it a valid executable
     }
+
+    auto end = std::chrono::steady_clock::now();
+
+    std::chrono::duration<double> elapsed_seconds = end - start;
+
+    std::cout << "Elapsed time: " << (elapsed_seconds.count() * 1000) << " ms\n";
 
     return 0;
 }

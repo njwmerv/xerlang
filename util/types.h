@@ -116,7 +116,7 @@ struct ASTNode {
 
     virtual ~ASTNode() = default;
 
-    virtual void accept(Visitor& v) = 0;
+    virtual std::any accept(Visitor& v) = 0;
 };
 
 // Analysis/Code Generation
@@ -125,6 +125,7 @@ struct ASTNode {
 #define TYPE_INT "int"
 #define TYPE_CHAR "char"
 #define TYPE_BOOL "bool"
+#define TYPE_VOID "void"
 #define SIZE_INT 4
 #define SIZE_CHAR 1
 #define SIZE_BOOL 1

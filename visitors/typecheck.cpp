@@ -301,7 +301,6 @@ std::any TypeChecker::visit(struct BinaryExprNode& a) {
         case Parser::BITOR:
         case Parser::BITXOR:
         case Parser::BITAND:
-        case Parser::BITNOT:
             if (a.LHS->type != TYPE_INT || a.RHS->type != TYPE_INT) throw std::runtime_error{"ERROR: Trying to perform *,/,%,<<,>>,^^,|,^,&,~ on NON-INT types"};
             a.type = TYPE_INT;
             break;

@@ -116,7 +116,8 @@
                            ↪ ID : c : char : -1
                    ↪ Variable Initialization
                        ↪ Declaration: a : int : -4
-                       ↪ Integer : 5
+                       ↪ Unary Expression: expr3 : int
+                           ↪ Integer : 5
                    ↪ Declaration: x : int : -8
              > ELIF
                ↪ Function Call: is_capitalized -> bool
@@ -125,7 +126,8 @@
                ↪ Block
                    ↪ Variable Initialization
                        ↪ Declaration: b : int : -12
-                       ↪ Integer : 5
+                       ↪ Unary Expression: expr3 : int
+                           ↪ Integer : 5
                    ↪ Print
                        ↪ Args
                            ↪ ID : x : int : 1

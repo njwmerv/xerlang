@@ -32,11 +32,11 @@ main : () -> int { # main
 
     if (c == 'a') {
         print(c);
-        int a = 5;
+        int a = + 5;
         int x;
     }
     elif (is_capitalized(c)) {
-        int b = 5;
+        int b = +5;
         print(x);
         int x;
     }
