@@ -116,8 +116,6 @@ int main(int argc, char* argv[]) {
             file = argv[i];
         }
     }
-//    file = "../xer/sample_program.xer";
-    file = "../xer/hello_world.xer";
     if (file.empty()) {
         std::cerr << "ERROR: Never given file to compile\n";
         return 4;

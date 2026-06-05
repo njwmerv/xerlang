@@ -1,0 +1,150 @@
+↪ Program
+  > Struct Definitions
+  > Type Sizes
+   > * : 8 b
+   > bool : 1 b
+   > char : 1 b
+   > int : 4 b
+  > Global Vars
+  > Global Symbol Table
+  > Procedures
+   ↪ Main: main
+     > Symbol Table
+     > Statements
+       ↪ Block
+           ↪ Variable Initialization
+               ↪ Declaration: string : char* : 0
+               ↪ Allocation: char* [ 14 ]
+           ↪ Assignment
+             > LValue
+               ↪ Unary Expression: AT
+                   ↪ Binary Expression: PLUS
+                       ↪ ID : string : 1
+                       ↪ Integer : 0
+             > New Value
+               ↪ Character : H
+           ↪ Assignment
+             > LValue
+               ↪ Unary Expression: AT
+                   ↪ Binary Expression: PLUS
+                       ↪ ID : string : 1
+                       ↪ Integer : 1
+             > New Value
+               ↪ Character : e
+           ↪ Assignment
+             > LValue
+               ↪ Unary Expression: AT
+                   ↪ Binary Expression: PLUS
+                       ↪ ID : string : 1
+                       ↪ Integer : 2
+             > New Value
+               ↪ Character : l
+           ↪ Assignment
+             > LValue
+               ↪ Unary Expression: AT
+                   ↪ Binary Expression: PLUS
+                       ↪ ID : string : 1
+                       ↪ Integer : 3
+             > New Value
+               ↪ Character : l
+           ↪ Assignment
+             > LValue
+               ↪ Unary Expression: AT
+                   ↪ Binary Expression: PLUS
+                       ↪ ID : string : 1
+                       ↪ Integer : 4
+             > New Value
+               ↪ Character : o
+           ↪ Assignment
+             > LValue
+               ↪ Unary Expression: AT
+                   ↪ Binary Expression: PLUS
+                       ↪ ID : string : 1
+                       ↪ Integer : 5
+             > New Value
+               ↪ Character : ,
+           ↪ Assignment
+             > LValue
+               ↪ Unary Expression: AT
+                   ↪ Binary Expression: PLUS
+                       ↪ ID : string : 1
+                       ↪ Integer : 6
+             > New Value
+               ↪ Character :  
+           ↪ Assignment
+             > LValue
+               ↪ Unary Expression: AT
+                   ↪ Binary Expression: PLUS
+                       ↪ ID : string : 1
+                       ↪ Integer : 7
+             > New Value
+               ↪ Character : W
+           ↪ Assignment
+             > LValue
+               ↪ Unary Expression: AT
+                   ↪ Binary Expression: PLUS
+                       ↪ ID : string : 1
+                       ↪ Integer : 8
+             > New Value
+               ↪ Character : o
+           ↪ Assignment
+             > LValue
+               ↪ Unary Expression: AT
+                   ↪ Binary Expression: PLUS
+                       ↪ ID : string : 1
+                       ↪ Integer : 9
+             > New Value
+               ↪ Character : r
+           ↪ Assignment
+             > LValue
+               ↪ Unary Expression: AT
+                   ↪ Binary Expression: PLUS
+                       ↪ ID : string : 1
+                       ↪ Integer : 10
+             > New Value
+               ↪ Character : l
+           ↪ Assignment
+             > LValue
+               ↪ Unary Expression: AT
+                   ↪ Binary Expression: PLUS
+                       ↪ ID : string : 1
+                       ↪ Integer : 11
+             > New Value
+               ↪ Character : d
+           ↪ Assignment
+             > LValue
+               ↪ Unary Expression: AT
+                   ↪ Binary Expression: PLUS
+                       ↪ ID : string : 1
+                       ↪ Integer : 12
+             > New Value
+               ↪ Character : !
+           ↪ Assignment
+             > LValue
+               ↪ Unary Expression: AT
+                   ↪ Binary Expression: PLUS
+                       ↪ ID : string : 1
+                       ↪ Integer : 13
+             > New Value
+               ↪ Character : 
+
+           ↪ For
+               ↪ For Prologue
+                   ↪ Variable Initialization
+                       ↪ Declaration: i : int : 0
+                       ↪ Integer : 0
+             > Condition
+               ↪ Binary Expression: LT
+                   ↪ ID : i : 1
+                   ↪ Integer : 14
+             > For Epilogue
+               ↪ Unary Expression: INCR
+                   ↪ ID : i : 1
+             > Statements
+               ↪ Block
+                   ↪ Print
+                       ↪ Args
+                           ↪ Unary Expression: AT
+                               ↪ Binary Expression: PLUS
+                                   ↪ ID : string : 1
+                                   ↪ ID : i : 1

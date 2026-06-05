@@ -12,6 +12,11 @@
 
 // Helpers
 
+static llvm::AllocaInst* CreateEntryBlockAlloca(llvm::Function* TheFunction, llvm::Type* type, const std::string& VarName) {
+    llvm::IRBuilder<> TmpB(&TheFunction->getEntryBlock(), TheFunction->getEntryBlock().begin());
+    return TmpB.CreateAlloca(type, nullptr, VarName);
+}
+
 llvm::Value* CodeGen::get_LValue(ASTNode* node) {
     // Case: x++
     if (auto* id = dynamic_cast<IDNode*>(node)) {
@@ -188,7 +193,7 @@ std::any CodeGen::visit(struct ProcedureNode& a) {
         std::string arg_name = a.params->declarations.at(idx)->id;
         arg.setName(arg_name);
 
-        llvm::AllocaInst* alloca = Builder.CreateAlloca(arg_types[idx], nullptr, arg_name);
+        llvm::AllocaInst* alloca = CreateEntryBlockAlloca(func, arg_types[idx], arg_name);
         Builder.CreateStore(&arg, alloca);
 
         named_values[arg_name] = alloca;
@@ -267,7 +272,8 @@ std::any CodeGen::visit(struct DeclarationNode& a) {
     }
 
     // Local Scope
-    llvm::AllocaInst* alloc = Builder.CreateAlloca(var_type, nullptr, a.id);
+    llvm::Function* the_function = Builder.GetInsertBlock()->getParent();
+    llvm::AllocaInst* alloc = CreateEntryBlockAlloca(the_function, var_type, a.id);
     named_values[a.id] = alloc;
 
     return std::any{};
@@ -275,13 +281,13 @@ std::any CodeGen::visit(struct DeclarationNode& a) {
 std::any CodeGen::visit(struct VarInitNode& a) {
     llvm::Type* var_type = get_LLVM_type(a.dcl->type);
 
-    // Global Scope
+    // In Global Scope
     if (!Builder.GetInsertBlock()) {
         Module->getOrInsertGlobal(a.dcl->id, var_type);
         llvm::GlobalVariable* g_var = Module->getNamedGlobal(a.dcl->id);
-        g_var->setLinkage(llvm::GlobalValue::CommonLinkage);
 
         if (!a.val) {
+            g_var->setLinkage(llvm::GlobalValue::CommonLinkage);
             if (var_type->isIntegerTy()) {
                 g_var->setInitializer(llvm::ConstantInt::get(var_type, 0));
             } else if (var_type->isPointerTy()) {
@@ -293,6 +299,7 @@ std::any CodeGen::visit(struct VarInitNode& a) {
             }
             return std::any{};
         }
+        g_var->setLinkage(llvm::GlobalValue::ExternalLinkage);
 
         // Evaluate the right-hand side. For globals, this MUST return a constant.
         auto* init_val = std::any_cast<llvm::Value*>(a.val->accept(*this));
@@ -315,7 +322,8 @@ std::any CodeGen::visit(struct VarInitNode& a) {
     }
 
     // Local Scope
-    llvm::AllocaInst* alloc = Builder.CreateAlloca(var_type, nullptr, a.dcl->id);
+    llvm::Function* the_function = Builder.GetInsertBlock()->getParent();
+    llvm::AllocaInst* alloc = CreateEntryBlockAlloca(the_function, var_type, a.dcl->id);
     named_values.insert({a.dcl->id, alloc});
 
     if (!a.val) {
@@ -419,16 +427,16 @@ std::any CodeGen::visit(struct PrintNode& a) {
     llvm::Type* val_type = val->getType();
 
     if (val_type->isIntegerTy(32)) { // INT
-        llvm::Value* format_ptr = Builder.CreateGlobalStringPtr("%d\n", "fmt_int");
+        llvm::Value* format_ptr = Builder.CreateGlobalStringPtr("%d", "fmt_int");
         Builder.CreateCall(printf_func, {format_ptr, val}, "printf_call_int");
     }
     else if (val_type->isIntegerTy(8)) { // CHAR
-        llvm::Value* format_ptr = Builder.CreateGlobalStringPtr("%c\n", "fmt_char");
+        llvm::Value* format_ptr = Builder.CreateGlobalStringPtr("%c", "fmt_char");
         Builder.CreateCall(printf_func, {format_ptr, val}, "printf_call_char");
     }
     else if (val_type->isIntegerTy(1)) { // BOOL
-        llvm::Value* true_str = Builder.CreateGlobalStringPtr("true\n", "str_true");
-        llvm::Value* false_str = Builder.CreateGlobalStringPtr("false\n", "str_false");
+        llvm::Value* true_str = Builder.CreateGlobalStringPtr("TRUE", "str_true");
+        llvm::Value* false_str = Builder.CreateGlobalStringPtr("FALSE", "str_false");
 
         llvm::Value* selected_str = Builder.CreateSelect(val, true_str, false_str, "bool_select");
 
@@ -985,9 +993,10 @@ std::any CodeGen::visit(struct ReadCallNode& a) {
                 scanf_type, llvm::Function::ExternalLinkage, "scanf", Module.get());
     }
 
-    llvm::Value* format_ptr = Builder.CreateGlobalStringPtr("%c", "read_char_fmt");
+    llvm::Value* format_ptr = Builder.CreateGlobalStringPtr(" %c", "read_char_fmt");
 
-    llvm::AllocaInst* temp_alloc = Builder.CreateAlloca(Builder.getInt8Ty(), nullptr, "read_char_tmp");
+    llvm::Function* the_function = Builder.GetInsertBlock()->getParent();
+    llvm::AllocaInst* temp_alloc = CreateEntryBlockAlloca(the_function, Builder.getInt8Ty(), "read_char_tmp");
 
     Builder.CreateStore(Builder.getInt8(0), temp_alloc);
 

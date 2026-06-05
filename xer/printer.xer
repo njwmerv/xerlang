@@ -1,0 +1,13 @@
+char QUIT = 'q';
+
+main : () -> int {
+    char c;
+    while (true) {
+        c = read();
+        if (c == QUIT) {
+            break;
+        }
+        print(c);
+        print('\n');
+    }
+}

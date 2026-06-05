@@ -62,9 +62,30 @@ ExprNode::ExprNode(std::string type, Parser::ParserSymbol node_type)
 NumNode::NumNode(const std::string& lexeme)
     : ExprNode{TYPE_INT, Parser::ParserSymbol::NUM}, val{std::stoi(lexeme)} {}
 
+char unescape_char(const std::string& lexeme) {
+    if (lexeme.empty()) throw std::invalid_argument("Empty lexeme");
+    else if (lexeme.length() == 3) return lexeme[1];
+    else if (lexeme.length() == 4) {
+        switch (lexeme[2]) {
+            case 'n':  return '\n';
+            case 't':  return '\t';
+            case 'r':  return '\r';
+            case '0':  return '\0';
+            case 'b':  return '\b';
+            case 'f':  return '\f';
+            case 'v':  return '\v';
+            case '\\': return '\\';
+            case '\'': return '\'';
+            case '\"': return '\"';
+            default: return lexeme[1];
+        }
+    }
+    throw std::invalid_argument("Invalid CHARLIT lexeme");
+}
+
 CharNode::CharNode(const std::string& lexeme)
     : ExprNode{TYPE_CHAR, Parser::ParserSymbol::CHARLIT},
-      val{(lexeme.size() == 3) ? lexeme.at(1) : lexeme.at(2)} {}
+      val{unescape_char(lexeme)} {}
 
 TrueNode::TrueNode() : ExprNode{TYPE_BOOL, Parser::ParserSymbol::TRUE}, val{true} {}
 
