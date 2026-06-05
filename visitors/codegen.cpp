@@ -1,5 +1,13 @@
-#include <iostream>
 #include "codegen.h"
+
+#include <iostream>
+
+#include <llvm/Passes/PassBuilder.h>
+#include <llvm/Passes/StandardInstrumentations.h>
+#include <llvm/IR/PassManager.h>
+#include <llvm/Analysis/LoopAnalysisManager.h>
+#include <llvm/Analysis/CGSCCPassManager.h>
+
 #include "visitor_helper.h"
 
 // Helpers
@@ -7,8 +15,13 @@
 llvm::Value* CodeGen::get_LValue(ASTNode* node) {
     // Case: x++
     if (auto* id = dynamic_cast<IDNode*>(node)) {
-        llvm::AllocaInst* alloc = named_values.at(id->name);
-        return alloc;
+        if (named_values.contains(id->name)) {
+            return named_values.at(id->name);
+        }
+        if (llvm::GlobalVariable* global_var = Module->getNamedGlobal(id->name)) {
+            return global_var;
+        }
+        return nullptr;
     }
 
     // Case: *(ptr + 1)++
@@ -20,22 +33,24 @@ llvm::Value* CodeGen::get_LValue(ASTNode* node) {
 
     // Case: x.a++ / x->a++
     if (auto* member = dynamic_cast<MemberAccessExprNode*>(node)) {
-        llvm::Value* base_lvalue = get_LValue(member->arg.get());
-        if (!base_lvalue) return nullptr;
-
         llvm::Value* struct_ptr = nullptr;
         std::string struct_name;
 
         if (member->op == Parser::ParserSymbol::DOT) {
-            struct_ptr = base_lvalue;
+            // For DOT, the LHS MUST be an L-Value (e.g., a local struct variable)
+            struct_ptr = get_LValue(member->arg.get());
+            if (!struct_ptr) return nullptr;
+
             struct_name = member->arg->type;
         }
         else if (member->op == Parser::ParserSymbol::ARROW) {
-            llvm::Type* ptr_type = get_LLVM_type(member->arg->type);
-            struct_ptr = Builder.CreateLoad(ptr_type, base_lvalue, "arrow_load_tmp");
+            // For ARROW, the LHS is an R-Value pointer expression.
+            // We just evaluate it to get the pointer value itself!
+            struct_ptr = std::any_cast<llvm::Value*>(member->arg->accept(*this));
+            if (!struct_ptr) return nullptr;
 
             struct_name = member->arg->type;
-            if (struct_name.ends_with('*')) struct_name.pop_back();
+            if (struct_name.ends_with('*')) struct_name.pop_back(); // Strip the pointer '*'
         }
 
         llvm::Type* opaque_type = get_LLVM_type(struct_name);
@@ -46,6 +61,7 @@ llvm::Value* CodeGen::get_LValue(ASTNode* node) {
         }
         size_t field_index = struct_field_indices.at(struct_name).at(member->id);
 
+        // Generate the offset from the base struct pointer
         return Builder.CreateStructGEP(struct_type, struct_ptr, field_index, "member_ptr_tmp");
     }
 
@@ -69,6 +85,30 @@ void CodeGen::print_ir(llvm::raw_fd_ostream& dest) {
     Module->print(dest, nullptr);
 }
 
+void CodeGen::optimize() {
+    // 1. Initialize the Analysis Managers
+    llvm::LoopAnalysisManager LAM;
+    llvm::FunctionAnalysisManager FAM;
+    llvm::CGSCCAnalysisManager CGAM;
+    llvm::ModuleAnalysisManager MAM;
+
+    // 2. Create the Pass Builder
+    llvm::PassBuilder PB;
+
+    // 3. Register all the basic analyses with the managers
+    PB.registerModuleAnalyses(MAM);
+    PB.registerCGSCCAnalyses(CGAM);
+    PB.registerFunctionAnalyses(FAM);
+    PB.registerLoopAnalyses(LAM);
+    PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
+
+    // 4. Build the Optimization Pipeline (O2 is a great default)
+    llvm::ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O2);
+
+    // 5. Run the passes on your Module
+    MPM.run(*Module, MAM);
+}
+
 // Implementation
 
 std::any CodeGen::visit(struct ArgsNode& a) { return std::any{}; }
@@ -84,6 +124,9 @@ std::any CodeGen::visit(struct ForPrologueNode& a) {
 std::any CodeGen::visit(struct ProgramNode& a) {
     for (auto& [id, struct_def] : a.struct_defs) {
         struct_def->accept(*this);
+    }
+    for (auto& global : a.global_vars) {
+        global->accept(*this);
     }
     for (auto& [id, proc] : a.procedures) {
         proc->accept(*this);
@@ -199,23 +242,87 @@ std::any CodeGen::visit(struct BlockNode& a) {
 std::any CodeGen::visit(struct DeclarationNode& a) {
     llvm::Type* var_type = get_LLVM_type(a.type);
 
-    llvm::AllocaInst* alloc = Builder.CreateAlloca(var_type, nullptr, a.id);
+    // Global Scope
+    if (!Builder.GetInsertBlock()) {
+        Module->getOrInsertGlobal(a.id, var_type);
+        llvm::GlobalVariable* g_var = Module->getNamedGlobal(a.id);
 
-    named_values.at(a.id) = alloc;
+        g_var->setLinkage(llvm::GlobalValue::CommonLinkage);
+
+        // Required default zero-initialization for LLVM globals
+        if (var_type->isIntegerTy()) {
+            g_var->setInitializer(llvm::ConstantInt::get(var_type, 0));
+        } else if (var_type->isPointerTy()) {
+            auto* ptr_type = llvm::cast<llvm::PointerType>(var_type);
+            g_var->setInitializer(llvm::ConstantPointerNull::get(ptr_type));
+        } else if (var_type->isStructTy()) {
+            auto* struct_type = llvm::cast<llvm::StructType>(var_type);
+            g_var->setInitializer(llvm::ConstantStruct::getNullValue(struct_type));
+        }
+        return std::any{};
+    }
+
+    // Local Scope
+    llvm::AllocaInst* alloc = Builder.CreateAlloca(var_type, nullptr, a.id);
+    named_values[a.id] = alloc;
 
     return std::any{};
 }
 std::any CodeGen::visit(struct VarInitNode& a) {
     llvm::Type* var_type = get_LLVM_type(a.dcl->type);
+
+    // Global Scope
+    if (!Builder.GetInsertBlock()) {
+        Module->getOrInsertGlobal(a.dcl->id, var_type);
+        llvm::GlobalVariable* g_var = Module->getNamedGlobal(a.dcl->id);
+        g_var->setLinkage(llvm::GlobalValue::CommonLinkage);
+
+        if (!a.val) {
+            if (var_type->isIntegerTy()) {
+                g_var->setInitializer(llvm::ConstantInt::get(var_type, 0));
+            } else if (var_type->isPointerTy()) {
+                auto* ptr_type = llvm::cast<llvm::PointerType>(var_type);
+                g_var->setInitializer(llvm::ConstantPointerNull::get(ptr_type));
+            } else if (var_type->isStructTy()) {
+                auto* struct_type = llvm::cast<llvm::StructType>(var_type);
+                g_var->setInitializer(llvm::ConstantStruct::getNullValue(struct_type));
+            }
+            return std::any{};
+        }
+
+        // Evaluate the right-hand side. For globals, this MUST return a constant.
+        auto* init_val = std::any_cast<llvm::Value*>(a.val->accept(*this));
+        if (!init_val) return std::make_any<llvm::Value*>(nullptr);
+
+        if (auto* const_init = llvm::dyn_cast<llvm::Constant>(init_val)) {
+            // Constant Casting
+            if (var_type->isIntegerTy(32) && const_init->getType()->isIntegerTy(1)) {
+                const_init = llvm::ConstantExpr::getZExt(const_init, Builder.getInt32Ty());
+            }
+            else if (var_type->isIntegerTy(8) && const_init->getType()->isIntegerTy(32)) {
+                const_init = llvm::ConstantExpr::getTrunc(const_init, Builder.getInt8Ty());
+            }
+            g_var->setInitializer(const_init);
+        } else {
+            throw std::runtime_error{"ERROR: Global variable '" + a.dcl->id + "' must be initialized with a compile-time constant."};
+        }
+
+        return std::any{};
+    }
+
+    // Local Scope
     llvm::AllocaInst* alloc = Builder.CreateAlloca(var_type, nullptr, a.dcl->id);
-    named_values.at(a.dcl->id) = alloc;
+    named_values.insert({a.dcl->id, alloc});
+
+    if (!a.val) {
+        return std::any{};
+    }
 
     auto* init_val = std::any_cast<llvm::Value*>(a.val->accept(*this));
     if (!init_val) return std::make_any<llvm::Value*>(nullptr);
 
     // Casting
     if (var_type->isIntegerTy(32) && init_val->getType()->isIntegerTy(1)) {
-        // Zero-extend the 1-bit true/false into a 32-bit 1 or 0
         init_val = Builder.CreateZExt(init_val, Builder.getInt32Ty(), "bool_cast_tmp");
     }
     else if (var_type->isIntegerTy(8) && init_val->getType()->isIntegerTy(32)) {
@@ -294,37 +401,36 @@ std::any CodeGen::visit(struct DeleteNode& a) {
     return std::any{};
 }
 std::any CodeGen::visit(struct PrintNode& a) {
-    // 1. Evaluate the expression to print
     auto* val = std::any_cast<llvm::Value*>(a.args->args.front()->accept(*this));
     if (!val) return std::make_any<llvm::Value*>(nullptr);
 
-    // 2. Determine the format string based on the LLVM type
-    std::string format_str;
-    if (val->getType()->isIntegerTy(32)) { // INT
-        format_str = "%d\n";
-    }
-    else if (val->getType()->isIntegerTy(8)) { // CHAR
-        format_str = "%c";
-    }
-    else {
-        format_str = "%d\n"; // Fallback
-    }
-
-    // 3. Declare printf: i32 printf(i8*, ...)
-    // (We only declare it if it hasn't been declared in the module yet)
     llvm::Function* printf_func = Module->getFunction("printf");
     if (!printf_func) {
         llvm::FunctionType* printf_type = llvm::FunctionType::get(
-                Builder.getInt32Ty(), {Builder.getInt8PtrTy()}, true); // 'true' means variadic (...)
+                Builder.getInt32Ty(), {Builder.getInt8PtrTy()}, true);
         printf_func = llvm::Function::Create(
                 printf_type, llvm::Function::ExternalLinkage, "printf", Module.get());
     }
 
-    // 4. Create the format string in memory
-    llvm::Value* format_ptr = Builder.CreateGlobalStringPtr(format_str, "print_fmt");
+    llvm::Type* val_type = val->getType();
 
-    // 5. Call printf(format_ptr, val)
-    Builder.CreateCall(printf_func, {format_ptr, val}, "printf_call");
+    if (val_type->isIntegerTy(32)) { // INT
+        llvm::Value* format_ptr = Builder.CreateGlobalStringPtr("%d\n", "fmt_int");
+        Builder.CreateCall(printf_func, {format_ptr, val}, "printf_call_int");
+    }
+    else if (val_type->isIntegerTy(8)) { // CHAR
+        llvm::Value* format_ptr = Builder.CreateGlobalStringPtr("%c\n", "fmt_char");
+        Builder.CreateCall(printf_func, {format_ptr, val}, "printf_call_char");
+    }
+    else if (val_type->isIntegerTy(1)) { // BOOL
+        llvm::Value* true_str = Builder.CreateGlobalStringPtr("true\n", "str_true");
+        llvm::Value* false_str = Builder.CreateGlobalStringPtr("false\n", "str_false");
+
+        llvm::Value* selected_str = Builder.CreateSelect(val, true_str, false_str, "bool_select");
+
+        llvm::Value* format_ptr = Builder.CreateGlobalStringPtr("%s", "fmt_string");
+        Builder.CreateCall(printf_func, {format_ptr, selected_str}, "printf_call_bool");
+    }
 
     return std::any{};
 }
@@ -407,6 +513,10 @@ std::any CodeGen::visit(struct AssignmentNode& a) {
     return std::make_any<llvm::Value*>(rhs_val);
 }
 std::any CodeGen::visit(struct ForNode& a) {
+    auto old_named_values = named_values;
+
+    if (a.prologue) a.prologue->accept(*this);
+
     llvm::Function* the_function = Builder.GetInsertBlock()->getParent();
 
     // 1. Create blocks
@@ -426,6 +536,9 @@ std::any CodeGen::visit(struct ForNode& a) {
         // (Cast condition to 1-bit boolean if needed, same as While loop)
         if (cond_val->getType()->isIntegerTy(32)) {
             cond_val = Builder.CreateICmpNE(cond_val, Builder.getInt32(0));
+        }
+        else if (cond_val->getType()->isIntegerTy(8)) {
+            cond_val = Builder.CreateICmpNE(cond_val, Builder.getInt8(0));
         }
 
         Builder.CreateCondBr(cond_val, body_bb, after_bb);
@@ -457,6 +570,8 @@ std::any CodeGen::visit(struct ForNode& a) {
     // 7. Continue after loop
     Builder.SetInsertPoint(after_bb);
 
+    named_values = old_named_values;
+
     return std::any{};
 }
 std::any CodeGen::visit(struct BreakNode& a) {
@@ -486,7 +601,18 @@ std::any CodeGen::visit(struct IDNode& a) {
     if (!addr)
         throw std::runtime_error{"ERROR: Undefined variable " + a.name};
 
-    llvm::Type* type = get_LLVM_type(a.type);
+    llvm::Type* type = nullptr;
+    if (auto* alloc = llvm::dyn_cast<llvm::AllocaInst>(addr)) {
+        type = alloc->getAllocatedType();
+    } else if (auto* global = llvm::dyn_cast<llvm::GlobalVariable>(addr)) {
+        type = global->getValueType();
+    } else if (auto* gep = llvm::dyn_cast<llvm::GetElementPtrInst>(addr)) {
+        type = gep->getResultElementType();
+    }
+
+    if (!type) {
+        throw std::runtime_error{"ERROR: Could not resolve target type for variable load."};
+    }
 
     return std::make_any<llvm::Value*>(
             Builder.CreateLoad(type, addr, a.name + "_load_tmp")
@@ -747,11 +873,25 @@ std::any CodeGen::visit(struct UnaryExprNode& a) {
             llvm::Value* target_address = get_LValue(a.arg.get());
             if (!target_address) return std::make_any<llvm::Value*>(nullptr);
 
-            llvm::Type* target_type = get_LLVM_type(a.type);
+            // 1. DYNAMIC TYPE EXTRACTION (Ignores a.type completely)
+            llvm::Type* target_type = nullptr;
+            if (auto* alloc = llvm::dyn_cast<llvm::AllocaInst>(target_address)) {
+                target_type = alloc->getAllocatedType();
+            } else if (auto* global = llvm::dyn_cast<llvm::GlobalVariable>(target_address)) {
+                target_type = global->getValueType();
+            } else if (auto* gep = llvm::dyn_cast<llvm::GetElementPtrInst>(target_address)) {
+                target_type = gep->getResultElementType();
+            }
+
+            if (!target_type) {
+                throw std::runtime_error{"ERROR: Could not resolve target type for INCR/DECR."};
+            }
+
+            // 2. Load the current value using the extracted type
             llvm::Value* current_value = Builder.CreateLoad(target_type, target_address, "load_tmp");
 
-            // int
-            if (current_value->getType()->isIntegerTy(32)) {
+            // 3. Generate the increment/decrement based on LLVM type
+            if (target_type->isIntegerTy(32)) { // INT
                 llvm::Value* one = Builder.getInt32(1);
                 if (a.op == Parser::ParserSymbol::INCR) {
                     result = Builder.CreateAdd(current_value, one, "incr_tmp");
@@ -759,15 +899,22 @@ std::any CodeGen::visit(struct UnaryExprNode& a) {
                     result = Builder.CreateSub(current_value, one, "decr_tmp");
                 }
             }
-            else if (current_value->getType()->isPointerTy()) {
+            else if (target_type->isIntegerTy(8)) { // CHAR
+                llvm::Value* one = Builder.getInt8(1);
+                if (a.op == Parser::ParserSymbol::INCR) {
+                    result = Builder.CreateAdd(current_value, one, "incr_char_tmp");
+                } else {
+                    result = Builder.CreateSub(current_value, one, "decr_char_tmp");
+                }
+            }
+            else if (target_type->isPointerTy()) { // POINTERS
                 llvm::Value* offset = Builder.getInt32(a.op == Parser::INCR ? 1 : -1);
-                llvm::Type* pointee_type = get_LLVM_type(a.type);
-
-                result = Builder.CreateGEP(pointee_type, current_value, offset, "ptr_inc");
+                result = Builder.CreateGEP(target_type, current_value, offset, "ptr_inc");
+            } else {
+                throw std::runtime_error{"ERROR: Cannot increment/decrement this type."};
             }
 
             Builder.CreateStore(result, target_address);
-
             break;
         }
         case Parser::AT: {
@@ -809,14 +956,15 @@ std::any CodeGen::visit(struct FunctionCallNode& a) {
         throw std::runtime_error{"ERROR: Unknown function referenced: " + a.id};
 
     std::vector<llvm::Value*> args_v;
-    for (auto& arg_expr : a.args->args) {
-        auto* val = std::any_cast<llvm::Value*>(arg_expr->accept(*this));
-        if (!val) return std::make_any<llvm::Value*>(nullptr);
-        args_v.push_back(val);
+
+    if (a.args) {
+        for (auto& arg_expr : a.args->args) {
+            auto* val = std::any_cast<llvm::Value*>(arg_expr->accept(*this));
+            if (!val) return std::make_any<llvm::Value*>(nullptr);
+            args_v.push_back(val);
+        }
     }
 
-    // Note: If the function returns void, it cannot have a name ("call_tmp"),
-    // so we check the return type first.
     if (callee->getReturnType()->isVoidTy()) {
         return std::make_any<llvm::Value*>(Builder.CreateCall(callee, args_v));
     }
@@ -825,7 +973,6 @@ std::any CodeGen::visit(struct FunctionCallNode& a) {
     }
 }
 std::any CodeGen::visit(struct ReadCallNode& a) {
-    // 1. Declare scanf: i32 scanf(i8*, ...)
     llvm::Function* scanf_func = Module->getFunction("scanf");
     if (!scanf_func) {
         llvm::FunctionType* scanf_type = llvm::FunctionType::get(
@@ -834,17 +981,15 @@ std::any CodeGen::visit(struct ReadCallNode& a) {
                 scanf_type, llvm::Function::ExternalLinkage, "scanf", Module.get());
     }
 
-    // 2. Create the format string "%d"
-    llvm::Value* format_ptr = Builder.CreateGlobalStringPtr("%d", "read_fmt");
+    llvm::Value* format_ptr = Builder.CreateGlobalStringPtr("%c", "read_char_fmt");
 
-    // 3. Allocate a temporary memory slot on the stack to hold the incoming integer
-    llvm::AllocaInst* temp_alloc = Builder.CreateAlloca(Builder.getInt32Ty(), nullptr, "read_tmp");
+    llvm::AllocaInst* temp_alloc = Builder.CreateAlloca(Builder.getInt8Ty(), nullptr, "read_char_tmp");
 
-    // 4. Call scanf(format_ptr, temp_alloc)
+    Builder.CreateStore(Builder.getInt8(0), temp_alloc);
+
     Builder.CreateCall(scanf_func, {format_ptr, temp_alloc}, "scanf_call");
 
-    // 5. Load the value from our temporary allocation so it can be assigned/used
-    llvm::Value* result = Builder.CreateLoad(Builder.getInt32Ty(), temp_alloc, "read_val");
+    llvm::Value* result = Builder.CreateLoad(Builder.getInt8Ty(), temp_alloc, "read_char_val");
 
     return std::make_any<llvm::Value*>(result);
 }

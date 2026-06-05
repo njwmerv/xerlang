@@ -66,7 +66,8 @@ int main(int argc, char* argv[]) {
             file = argv[i];
         }
     }
-    file = "../xer/sample_program.xer";
+//    file = "../xer/sample_program.xer";
+    file = "../xer/hello_world.xer";
     if (file.empty()) {
         std::cerr << "ERROR: Never given file to compile\n";
         return 4;
@@ -141,6 +142,11 @@ int main(int argc, char* argv[]) {
         return 7;
     }
 
+    // Optimize
+    if (!(flags & NO_OPTIMIZE)) {
+        cg.optimize();
+    }
+
     if (flags | IR_ONLY) {
         std::error_code error_code;
         llvm::raw_fd_ostream ll{file_root + ".ll", error_code, llvm::sys::fs::OF_None};
@@ -150,11 +156,6 @@ int main(int argc, char* argv[]) {
         }
         cg.print_ir(ll);
         return 0;
-    }
-
-    // Optimize
-    if (!(flags & NO_OPTIMIZE)) {
-
     }
 
     // Code Generation

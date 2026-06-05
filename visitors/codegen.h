@@ -47,6 +47,8 @@ public:
 
     void print_ir(llvm::raw_fd_ostream&);
 
+    void optimize();
+
     std::any visit(struct ArgsNode&) override;
     std::any visit(struct DeclarationsNode&) override;
     std::any visit(struct ForPrologueNode&) override;

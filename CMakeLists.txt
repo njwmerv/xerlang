@@ -43,7 +43,12 @@ target_include_directories(XerlangCore PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 
-llvm_map_components_to_libnames(llvm_libs core support)
+llvm_map_components_to_libnames(llvm_libs
+  core
+  support
+  analysis
+  passes
+)
 
 target_link_libraries(XerlangCore PUBLIC ${llvm_libs})
 
