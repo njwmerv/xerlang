@@ -45,6 +45,7 @@ target_include_directories(XerlangCore PUBLIC
 
 llvm_map_components_to_libnames(llvm_libs
   core
+  native
   support
   analysis
   passes
@@ -54,4 +55,4 @@ target_link_libraries(XerlangCore PUBLIC ${llvm_libs})
 
 add_executable(Xerlang main.cpp)
 
-target_link_libraries(Xerlang PRIVATE XerlangCore)
+target_link_libraries(Xerlang PRIVATE XerlangCore ${llvm_libs})

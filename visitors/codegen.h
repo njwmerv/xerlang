@@ -49,6 +49,8 @@ public:
 
     void optimize();
 
+    llvm::Module* get_module() const;
+
     std::any visit(struct ArgsNode&) override;
     std::any visit(struct DeclarationsNode&) override;
     std::any visit(struct ForPrologueNode&) override;

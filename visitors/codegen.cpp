@@ -111,6 +111,10 @@ void CodeGen::optimize() {
 
 // Implementation
 
+llvm::Module *CodeGen::get_module() const {
+    return Module.get();
+}
+
 std::any CodeGen::visit(struct ArgsNode& a) { return std::any{}; }
 std::any CodeGen::visit(struct DeclarationsNode& a) {
     for (auto& decl : a.declarations) decl->accept(*this);
